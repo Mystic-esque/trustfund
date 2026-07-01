@@ -74,9 +74,9 @@ const DealCard = ({ deal }: { deal: Deal }) => {
       className="aether-glass-orders rounded-2xl p-5 flex items-center justify-between active:scale-[0.98] transition-all cursor-pointer"
     >
       <div className="flex items-center gap-4">
-        <div className={`w-12 h-12 rounded-full overflow-hidden border border-white/10 bg-white/5 flex items-center justify-center ${deal.avatarUrl ? 'ring-1 ring-primary/20' : ''}`}>
+        <div className={`w-12 h-12 rounded-full overflow-hidden border border-white/10 bg-white/5 flex items-center justify-center ${deal.avatarUrl ? 'ring-1 ring-primary/20 animate-pulse bg-white/10' : ''}`}>
           {deal.avatarUrl ? (
-            <img className="w-full h-full object-cover" alt="Avatar" src={deal.avatarUrl} />
+            <img loading="lazy" className="w-full h-full object-cover" alt="Avatar" src={deal.avatarUrl} />
           ) : (
             <span className="material-symbols-outlined text-primary/70">{deal.iconName}</span>
           )}

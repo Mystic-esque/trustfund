@@ -25,14 +25,14 @@ const Home = () => {
       title: 'Escrow Balance',
       amount: '5,000.00',
       tag: 'Locked in Active Deals',
-      gradient: 'glass-container bg-white/5'
+      gradient: 'bg-[#1A1625] border-white/10'
     },
     {
       id: 2,
       title: 'Pending Release',
       amount: '12,400.00',
       tag: 'Awaiting Buyer Confirmation',
-      gradient: 'glass-container bg-white/5'
+      gradient: 'bg-[#162224] border-white/10'
     }
   ];
 
@@ -41,14 +41,14 @@ const Home = () => {
   };
 
   return (
-    <div className="home2-wrapper antialiased font-body-md pb-[100px]">
+    <div className="home2-wrapper antialiased font-body-md pb-[100px] bg-[#101415] desktop-radial-bg">
       <div className="max-w-[600px] mx-auto text-on-background relative">
         
         {/* TopAppBar */}
         <header className="w-full top-0 sticky bg-white/5 backdrop-blur-xl transition-opacity duration-200 flex items-center justify-between px-5 h-16 z-40 border-b border-white/10 shadow-sm">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full overflow-hidden border border-white/20 cursor-pointer hover:opacity-80 transition-opacity">
-              <img alt="User Profile" className="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC94k3VGb5Ss-S0hfQJQZMduDlYwYtUq4hc3XsEG8u3BYRn--UK6_TThC-w6Lxk5i6XsVgHBS5hZBCItX1-PkRAO3eVBCPdVf_fl3VyD1KMmiKqdWVUPDK9SMwXgODxt62vKNI_2U32jm7ZzmXRpQrH-LSGsw2oUFN5Julm6bk6b7pgfRZhwGExiI-KkZDwjl6eGyLmiH32Q2N1vQ9mqeQs2UXMpeRpOOze3ZoIM3sRVrdsr58NuAsRVEzDCf8y2Tr09O44yDtcuxVh"/>
+            <div className="w-10 h-10 rounded-full overflow-hidden border border-white/20 cursor-pointer hover:opacity-80 transition-opacity bg-white/10 animate-pulse">
+              <img alt="User Profile" loading="lazy" className="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC94k3VGb5Ss-S0hfQJQZMduDlYwYtUq4hc3XsEG8u3BYRn--UK6_TThC-w6Lxk5i6XsVgHBS5hZBCItX1-PkRAO3eVBCPdVf_fl3VyD1KMmiKqdWVUPDK9SMwXgODxt62vKNI_2U32jm7ZzmXRpQrH-LSGsw2oUFN5Julm6bk6b7pgfRZhwGExiI-KkZDwjl6eGyLmiH32Q2N1vQ9mqeQs2UXMpeRpOOze3ZoIM3sRVrdsr58NuAsRVEzDCf8y2Tr09O44yDtcuxVh"/>
             </div>
             <h1 className="font-headline-lg-mobile text-[24px] font-bold text-white hover:opacity-80 transition-opacity cursor-pointer">TrustFund</h1>
           </div>
@@ -165,8 +165,8 @@ const Home = () => {
               {/* Deal Item 1 */}
               <Link to="/orders/1" className="glass-container rounded-2xl p-4 flex items-center justify-between hover:bg-white/[0.06] transition-all cursor-pointer active:scale-[0.98]">
                 <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-full overflow-hidden bg-white/10 border border-white/20 shrink-0">
-                    <img alt="Deal Avatar" className="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB1i5Hqqd1pQSV9eYplnqM7xezicFeKBKQvZhG3YaID8nz7lA3OHlH0U6y2bSq1Yu-z9QVIzpP0kSCkKCGRYoowOiky2tlxhUbTASVryQuRKe_xiF_hoASaKUSDI9x1T2TerkY7qXcpCZoeyUOE5t1HZJ0eZ3-_eK-QlOvmmo1rW9PXfethwePQNvJViJb-6R1oDjzi12bOKSXw1WWVLvHHfLJcov-wmYNLonldzeXLtlJ9ZsnqqMh__uWaP1dcOzrKcOx4caa7py0W"/>
+                  <div className="w-12 h-12 rounded-full overflow-hidden bg-white/10 border border-white/20 shrink-0 animate-pulse">
+                    <img alt="Deal Avatar" loading="lazy" className="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB1i5Hqqd1pQSV9eYplnqM7xezicFeKBKQvZhG3YaID8nz7lA3OHlH0U6y2bSq1Yu-z9QVIzpP0kSCkKCGRYoowOiky2tlxhUbTASVryQuRKe_xiF_hoASaKUSDI9x1T2TerkY7qXcpCZoeyUOE5t1HZJ0eZ3-_eK-QlOvmmo1rW9PXfethwePQNvJViJb-6R1oDjzi12bOKSXw1WWVLvHHfLJcov-wmYNLonldzeXLtlJ9ZsnqqMh__uWaP1dcOzrKcOx4caa7py0W"/>
                   </div>
                   <div className="flex flex-col">
                     <span className="font-body-md text-white font-medium">@alex_chen</span>
@@ -182,8 +182,8 @@ const Home = () => {
               {/* Deal Item 2 */}
               <Link to="/orders/2" className="glass-container rounded-2xl p-4 flex items-center justify-between hover:bg-white/[0.06] transition-all cursor-pointer active:scale-[0.98]">
                 <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-full overflow-hidden bg-white/10 border border-white/20 shrink-0">
-                    <img alt="Deal Avatar" className="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCFYtuYxBk9p4vqNrIF-XHdz0uqIEdYFYAE2FcBT7JIwJWHc5Nam8nWB7jPaGNlx2qa1vThU0Gt9MIarxTv1jf7-0u2Ss04G2a1-yHvrct3I9cXq0Hh0RflbJ013f-RBM5RlkuiANChVylaQOq40jkhf9ug85eUNc4O1Ypp1ataVlfj1QF7JpR5mM1SxIH5FjZbsswq_k3CYrspDBovEM1KAJlSqXj8Ju71PYGbtKU6MJQdnw_8OdeGipXrEJnLhEw2RG9-tiJtJouo"/>
+                  <div className="w-12 h-12 rounded-full overflow-hidden bg-white/10 border border-white/20 shrink-0 animate-pulse">
+                    <img alt="Deal Avatar" loading="lazy" className="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCFYtuYxBk9p4vqNrIF-XHdz0uqIEdYFYAE2FcBT7JIwJWHc5Nam8nWB7jPaGNlx2qa1vThU0Gt9MIarxTv1jf7-0u2Ss04G2a1-yHvrct3I9cXq0Hh0RflbJ013f-RBM5RlkuiANChVylaQOq40jkhf9ug85eUNc4O1Ypp1ataVlfj1QF7JpR5mM1SxIH5FjZbsswq_k3CYrspDBovEM1KAJlSqXj8Ju71PYGbtKU6MJQdnw_8OdeGipXrEJnLhEw2RG9-tiJtJouo"/>
                   </div>
                   <div className="flex flex-col">
                     <span className="font-body-md text-white font-medium">@sarah_j</span>
@@ -199,8 +199,8 @@ const Home = () => {
               {/* Deal Item 3 */}
               <Link to="/orders/3" className="glass-container rounded-2xl p-4 flex items-center justify-between hover:bg-white/[0.06] transition-all cursor-pointer active:scale-[0.98] opacity-70">
                 <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-full overflow-hidden bg-white/10 border border-white/20 shrink-0">
-                    <img alt="Deal Avatar" className="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCLKrj0jYZ0G0EkL8atq85fsaED403aVrn7rcN8354ACYUh3xCXc1THZ8B5xqFlF48DX7g_ClBgJHGAH4IHTA4D8KoBf2hx81MdERJb60CvjHpCfSc3i3dJUCfTkIID4WimW7qB2xV-qYdPn_GlaNfVxBltGgOdtjNqxZk9gQuqyEAhqSzBMCOU1Ea5LcdIBNfgUxtx9Y6XRmyKwiNx-M3Nc86t09u0vOHchuNZViJZw_taV03lNPE_IIcTMIB0Sz4-qMOMsmFXATiq"/>
+                  <div className="w-12 h-12 rounded-full overflow-hidden bg-white/10 border border-white/20 shrink-0 animate-pulse">
+                    <img alt="Deal Avatar" loading="lazy" className="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCLKrj0jYZ0G0EkL8atq85fsaED403aVrn7rcN8354ACYUh3xCXc1THZ8B5xqFlF48DX7g_ClBgJHGAH4IHTA4D8KoBf2hx81MdERJb60CvjHpCfSc3i3dJUCfTkIID4WimW7qB2xV-qYdPn_GlaNfVxBltGgOdtjNqxZk9gQuqyEAhqSzBMCOU1Ea5LcdIBNfgUxtx9Y6XRmyKwiNx-M3Nc86t09u0vOHchuNZViJZw_taV03lNPE_IIcTMIB0Sz4-qMOMsmFXATiq"/>
                   </div>
                   <div className="flex flex-col">
                     <span className="font-body-md text-white font-medium">@dev_mike</span>

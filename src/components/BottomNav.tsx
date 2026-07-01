@@ -6,7 +6,7 @@ const BottomNav = () => {
 
   return (
     <div className="md:hidden fixed bottom-6 left-1/2 -translate-x-1/2 w-[90%] max-w-[400px] z-50">
-      <nav className="glass-container rounded-full h-16 flex items-center justify-around px-2 shadow-2xl overflow-visible">
+      <nav className="bg-[#101415]/85 backdrop-blur-2xl border border-white/10 rounded-full h-16 flex items-center justify-around px-2 shadow-2xl overflow-visible">
         
         {/* Home */}
         <Link to="/home" className={`flex flex-col items-center justify-center px-3 transition-transform active:scale-90 ${currentPath === '/home' ? 'text-primary' : 'text-white/60 hover:text-white'}`}>
