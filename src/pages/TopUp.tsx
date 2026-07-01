@@ -23,23 +23,6 @@ const TopUp = () => {
     });
   };
 
-  const handleShare = () => {
-    if (navigator.share) {
-      navigator.share({
-        title: 'My TrustFund Virtual Account',
-        text: `Bank: Nomba MFB\nAccount Name: Alexander Stratton\nAccount Number: ${accountNumber.replace(/\s/g, '')}`
-      }).catch(console.error);
-    } else {
-      toast.success('Sharing details not supported on this browser. Please copy instead.', {
-        icon: 'ℹ️',
-        style: {
-          background: '#1d2022',
-          color: '#fff',
-          border: '1px solid rgba(255,255,255,0.1)'
-        }
-      });
-    }
-  };
 
   return (
     <div className="min-h-screen font-body-md text-on-background relative">

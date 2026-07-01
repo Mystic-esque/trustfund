@@ -5,7 +5,6 @@ import './LockFunds.css';
 
 const LockFunds = () => {
   const navigate = useNavigate();
-  const [isScanning, setIsScanning] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
 
   // MOCK DATA: Change these to test both states
