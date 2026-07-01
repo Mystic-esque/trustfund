@@ -1,0 +1,61 @@
+.lock-parser-wrapper {
+    background-color: #0b0b0d;
+    color: #e0e3e5;
+    min-height: 100vh;
+}
+
+.parser-glass {
+    background: rgba(26, 26, 30, 0.45);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(168, 85, 247, 0.15);
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+}
+
+.parser-glow {
+    box-shadow: 0 0 20px rgba(168, 85, 247, 0.2);
+}
+
+.ambient-bg-parser {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: -1;
+    background: radial-gradient(circle at 50% 30%, rgba(168, 85, 247, 0.08) 0%, transparent 60%),
+                radial-gradient(circle at 80% 80%, rgba(88, 28, 135, 0.05) 0%, transparent 50%),
+                #0b0b0d;
+}
+
+.scan-line {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 2px;
+    background: rgba(168, 85, 247, 0.5);
+    box-shadow: 0 0 10px rgba(168, 85, 247, 0.8);
+    opacity: 0;
+    z-index: 10;
+}
+
+.is-parsing .scan-line {
+    animation: scan 1.5s ease-in-out infinite;
+}
+
+@keyframes scan {
+    0% { top: 0; opacity: 0; }
+    10% { opacity: 1; }
+    90% { opacity: 1; }
+    100% { top: 100%; opacity: 0; }
+}
+
+.link-input-area {
+    transition: all 0.3s ease;
+}
+
+.link-input-area:focus-within {
+    border-color: rgba(168, 85, 247, 0.5);
+    box-shadow: inset 0 0 15px rgba(168, 85, 247, 0.1);
+}

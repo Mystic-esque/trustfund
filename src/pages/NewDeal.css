@@ -1,0 +1,63 @@
+.new-deal-wrapper {
+    background: radial-gradient(circle at top right, #1a1a2e 0%, #0a0a0a 100%);
+    color: #e5e2e1;
+    min-height: 100vh;
+}
+
+.glass-panel-new-deal {
+    background: rgba(255, 255, 255, 0.03);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.glass-input-new-deal {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: #ffffff;
+    transition: all 0.3s ease;
+}
+
+.glass-input-new-deal:focus {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: #d2bbff;
+    outline: none;
+    box-shadow: 0 0 20px rgba(210, 187, 255, 0.15);
+}
+
+.glass-input-new-deal::placeholder {
+    color: rgba(255, 255, 255, 0.3);
+}
+
+.aetheric-glint-new-deal {
+    position: relative;
+    overflow: hidden;
+}
+
+.aetheric-glint-new-deal::after {
+    content: "";
+    position: absolute;
+    top: -50%;
+    left: -150%;
+    width: 200%;
+    height: 200%;
+    background: linear-gradient(
+        115deg,
+        transparent 0%,
+        rgba(255, 255, 255, 0) 40%,
+        rgba(255, 255, 255, 0.1) 50%,
+        rgba(255, 255, 255, 0) 60%,
+        transparent 100%
+    );
+    animation: glint-new-deal 6s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+    pointer-events: none;
+}
+
+@keyframes glint-new-deal {
+    0% { left: -150%; }
+    30%, 100% { left: 150%; }
+}
+
+.btn-gradient {
+    background: linear-gradient(135deg, #7c3aed 0%, #a78bfa 100%);
+}

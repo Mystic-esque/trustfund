@@ -1,0 +1,32 @@
+.order-summary-wrapper {
+    background-color: #101415;
+    color: #e0e3e5;
+    min-height: 100vh;
+}
+
+.glass-stroke {
+    border: 1px solid transparent;
+    background-origin: border-box;
+    background-clip: padding-box, border-box;
+    background-image: linear-gradient(to bottom right, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05));
+}
+
+.aurora-bg {
+    background: radial-gradient(circle at 20% 30%, rgba(183, 109, 255, 0.15) 0%, transparent 50%),
+                radial-gradient(circle at 80% 70%, rgba(62, 60, 143, 0.2) 0%, transparent 50%),
+                #101415;
+}
+
+.glow-violet {
+    box-shadow: 0 0 20px rgba(183, 109, 255, 0.3);
+}
+
+@keyframes float {
+    0% { transform: translateY(0px); }
+    50% { transform: translateY(-10px); }
+    100% { transform: translateY(0px); }
+}
+
+.animate-float {
+    animation: float 6s ease-in-out infinite;
+}

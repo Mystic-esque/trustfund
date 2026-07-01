@@ -1,0 +1,38 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-gray-50 text-gray-900 antialiased;
+  }
+}
+
+@layer utilities {
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom, 20px);
+  }
+  
+  @keyframes shimmer {
+    0% { transform: translateX(-100%); }
+    20% { transform: translateX(200%); }
+    100% { transform: translateX(200%); }
+  }
+  .shimmer-effect {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 50%;
+    height: 100%;
+    background: linear-gradient(
+        90deg,
+        transparent,
+        rgba(255, 255, 255, 0.1),
+        transparent
+    );
+    transform: skewX(-20deg);
+    pointer-events: none;
+    opacity: 1;
+    animation: shimmer 5s infinite ease-in-out;
+  }
+}

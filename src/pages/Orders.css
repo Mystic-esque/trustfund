@@ -1,0 +1,56 @@
+.orders-wrapper {
+    background-color: #0b0b0d;
+    color: #e0e3e5;
+    min-height: 100vh;
+}
+
+.aether-glass-orders {
+    background: rgba(26, 26, 30, 0.45);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(168, 85, 247, 0.15);
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+}
+
+.aether-glass-orders:hover {
+    border-color: rgba(168, 85, 247, 0.3);
+    background: rgba(168, 85, 247, 0.05);
+}
+
+.aether-glow-orders {
+    box-shadow: 0 0 20px rgba(168, 85, 247, 0.4);
+}
+
+.cinematic-bg-orders {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: -1;
+    background: radial-gradient(circle at 50% 0%, rgba(168, 85, 247, 0.15) 0%, transparent 50%),
+                radial-gradient(circle at 100% 100%, rgba(88, 28, 135, 0.1) 0%, transparent 50%),
+                #0b0b0d;
+}
+
+.energy-stream-orders {
+    position: absolute;
+    width: 1px;
+    height: 100px;
+    background: linear-gradient(to bottom, transparent, #a855f7, transparent);
+    opacity: 0.2;
+    animation: move-stream 10s linear infinite;
+}
+
+@keyframes move-stream {
+    0% { transform: translateY(-100px) translateX(0); }
+    100% { transform: translateY(100vh) translateX(20px); }
+}
+
+.no-scrollbar::-webkit-scrollbar {
+    display: none;
+}
+.no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
