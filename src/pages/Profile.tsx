@@ -1,16 +1,18 @@
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import BottomNav from '../components/BottomNav';
 import './Profile.css';
 
 const Profile = () => {
+  const navigate = useNavigate();
+
   return (
-    <div className="bg-[#0A0A0A] text-on-surface min-h-screen font-body-md pb-[100px]">
+    <div className="text-on-surface min-h-screen font-body-md pb-[100px]" style={{ background: 'radial-gradient(circle at top right, #1a1a2e 0%, #0a0a0a 100%)' }}>
       {/* TopAppBar */}
       <header className="fixed top-0 w-full z-50 bg-[#131313]/80 backdrop-blur-md border-b border-outline-variant/10">
         <div className="flex items-center justify-between px-5 h-16 w-full max-w-[600px] mx-auto">
           <div className="w-10 h-10 flex items-center justify-start">
-            <button className="text-on-surface-variant hover:text-primary transition-colors">
-              <span className="material-symbols-outlined">menu</span>
+            <button onClick={() => navigate(-1)} className="text-on-surface-variant hover:text-primary transition-colors active:scale-95 duration-150 p-2 -ml-2 rounded-full hover:bg-white/5">
+              <span className="material-symbols-outlined">arrow_back</span>
             </button>
           </div>
           <h1 className="font-headline-md text-xl tracking-tight text-primary font-bold">Profile</h1>

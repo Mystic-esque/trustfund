@@ -118,7 +118,7 @@ const Orders = () => {
   }, [filteredDeals]);
 
   return (
-    <div className="orders-wrapper font-body-md pb-[100px]">
+    <div className="orders-wrapper font-body-md pb-[100px]" style={{ background: 'radial-gradient(circle at 20% 30%, rgba(221, 183, 255, 0.15) 0%, transparent 50%), radial-gradient(circle at 80% 70%, rgba(62, 60, 143, 0.2) 0%, transparent 50%), #101415' }}>
       <div className="cinematic-bg-orders">
         <div className="energy-stream-orders" style={{ left: '10%', animationDuration: '15s' }}></div>
         <div className="energy-stream-orders" style={{ left: '30%', animationDuration: '25s', animationDelay: '2s' }}></div>

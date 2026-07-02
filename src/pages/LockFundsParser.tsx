@@ -26,12 +26,8 @@ const LockFundsParser = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#131313] text-[#e5e2e1] font-['Hanken_Grotesk'] flex flex-col">
-      {/* Ambient Background Elements */}
-      <div className="fixed inset-0 overflow-hidden pointer-events-none z-[0]">
-        <div className="absolute top-[10%] left-[5%] w-32 h-32 opacity-20 blur-3xl rounded-full" style={{ backgroundColor: 'rgba(210, 187, 255, 0.3)' }}></div>
-        <div className="absolute bottom-[20%] right-[10%] w-48 h-48 opacity-20 blur-3xl rounded-full" style={{ backgroundColor: 'rgba(221, 183, 255, 0.3)' }}></div>
-      </div>
+    <div className="min-h-screen text-[#e5e2e1] font-['Hanken_Grotesk'] flex flex-col" style={{ background: 'radial-gradient(circle at top right, #1a1a2e 0%, #0a0a0a 100%)' }}>
+
 
       {/* Top App Bar */}
       <header className="fixed top-0 w-full z-50 backdrop-blur-md border-b border-[#4a4455]/20 bg-[#131313]/80">

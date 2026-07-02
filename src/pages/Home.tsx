@@ -32,7 +32,7 @@ const Home = () => {
       title: 'Pending Release',
       amount: '12,400.00',
       tag: 'Awaiting Buyer Confirmation',
-      gradient: 'bg-gradient-to-br from-[#B45309] to-[#451A03] border-white/10'
+      gradient: 'bg-gradient-to-br from-[#1D4ED8] to-[#172554] border-white/10'
     }
   ];
 
@@ -41,7 +41,7 @@ const Home = () => {
   };
 
   return (
-    <div className="home2-wrapper antialiased font-body-md pb-[100px] bg-[#101415] desktop-radial-bg">
+    <div className="home2-wrapper antialiased font-body-md pb-[100px]" style={{ background: 'radial-gradient(circle at 20% 30%, rgba(221, 183, 255, 0.15) 0%, transparent 50%), radial-gradient(circle at 80% 70%, rgba(62, 60, 143, 0.2) 0%, transparent 50%), #101415' }}>
       <div className="max-w-[600px] mx-auto text-on-background relative">
         
         {/* TopAppBar */}
@@ -99,7 +99,7 @@ const Home = () => {
                     <div className="relative z-10 flex items-baseline gap-2 mb-8">
                       <span className="font-headline-lg-mobile text-white/80 text-2xl">₦</span>
                       <h2 className="font-display-lg text-[48px] leading-tight text-white tracking-tight font-bold transition-all duration-300">
-                        {isBalanceVisible || position !== 0 ? card.amount : '••••••••'}
+                        {isBalanceVisible ? card.amount : '••••••••'}
                       </h2>
                     </div>
                     
