@@ -1,8 +1,13 @@
 .home2-wrapper {
-  background: radial-gradient(circle at 0% 0%, #1e1b4b 0%, #101415 50%),
-              radial-gradient(circle at 100% 100%, #312e81 0%, #101415 50%);
-  background-attachment: fixed;
   min-height: 100dvh;
+}
+
+@media (min-width: 768px) {
+  .desktop-radial-bg {
+    background: radial-gradient(circle at 0% 0%, #1e1b4b 0%, #101415 50%),
+                radial-gradient(circle at 100% 100%, #312e81 0%, #101415 50%);
+    background-attachment: fixed;
+  }
 }
 
 .glass-container {
