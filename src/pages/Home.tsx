@@ -25,14 +25,14 @@ const Home = () => {
       title: 'Escrow Balance',
       amount: '5,000.00',
       tag: 'Locked in Active Deals',
-      gradient: 'bg-[#1A1625] border-white/10'
+      gradient: 'bg-gradient-to-br from-[#0F766E] to-[#042F2E] border-white/10'
     },
     {
       id: 2,
       title: 'Pending Release',
       amount: '12,400.00',
       tag: 'Awaiting Buyer Confirmation',
-      gradient: 'bg-[#162224] border-white/10'
+      gradient: 'bg-gradient-to-br from-[#B45309] to-[#451A03] border-white/10'
     }
   ];
 
