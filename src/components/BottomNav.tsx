@@ -21,7 +21,7 @@ const BottomNav = () => {
         </Link>
 
         {/* Vibrant Add Button */}
-        <Link to="/orders/new" className="w-14 h-14 -mt-8 rounded-full bg-gradient-to-br from-primary-container to-secondary-container shadow-lg shadow-primary/30 flex items-center justify-center text-white ring-4 ring-[#101415]/50 transition-all hover:scale-110 active:scale-90">
+        <Link to="/orders/new" className="tour-new-deal w-14 h-14 -mt-8 rounded-full bg-gradient-to-br from-primary-container to-secondary-container shadow-lg shadow-primary/30 flex items-center justify-center text-white ring-4 ring-[#101415]/50 transition-all hover:scale-110 active:scale-90">
           <span className="material-symbols-outlined text-[32px]">add</span>
         </Link>
 

@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import Joyride, { STATUS } from 'react-joyride';
+import type { CallBackProps, Step } from 'react-joyride';
 import BottomNav from '../components/BottomNav';
 import { supabase } from '../lib/supabase';
 import './Home.css';
@@ -11,6 +13,35 @@ const Home = () => {
   const [userData, setUserData] = useState<any>(null);
   const [orders, setOrders] = useState<any[]>([]);
   const navigate = useNavigate();
+  const [runTour, setRunTour] = useState(false);
+
+  const tourSteps: Step[] = [
+    {
+      target: '.tour-wallet-cards',
+      content: 'Your credits and debits occur in available balance. Escrow contains your locked funds, pending is awaiting buyers confirmation.',
+      disableBeacon: true,
+      title: 'Tap to switch between cards',
+    },
+    {
+      target: '.tour-new-deal',
+      content: 'Tap here to generate a secure deal link and share it with your buyers in any DM.',
+      title: 'Create a Deal',
+    },
+    {
+      target: '.tour-top-up',
+      content: 'Tap here to find your dedicated NUBAN and fund your wallet instantly via standard bank transfer.',
+      title: 'Fund Your Wallet',
+    }
+  ];
+
+  const handleJoyrideCallback = (data: CallBackProps) => {
+    const { status } = data;
+    const finishedStatuses: string[] = [STATUS.FINISHED, STATUS.SKIPPED];
+    if (finishedStatuses.includes(status)) {
+      setRunTour(false);
+      localStorage.setItem('hasSeenTrustFundTour', 'true');
+    }
+  };
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -41,6 +72,12 @@ const Home = () => {
     };
 
     fetchUser();
+
+    // Check if user has seen tutorial
+    const hasSeenTour = localStorage.getItem('hasSeenTrustFundTour');
+    if (!hasSeenTour) {
+      setTimeout(() => setRunTour(true), 1500); // Slight delay for smooth entrance
+    }
 
     // Subscribe to realtime balance updates
     const subscription = supabase
@@ -95,6 +132,56 @@ const Home = () => {
   return (
     <div className="home2-wrapper antialiased font-body-md pb-[100px]" style={{ background: 'radial-gradient(circle at 20% 30%, rgba(221, 183, 255, 0.15) 0%, transparent 50%), radial-gradient(circle at 80% 70%, rgba(62, 60, 143, 0.2) 0%, transparent 50%), #101415' }}>
       <div className="max-w-[600px] mx-auto text-on-background relative">
+        <Joyride
+          steps={tourSteps}
+          run={runTour}
+          continuous
+          showSkipButton
+          showProgress
+          callback={handleJoyrideCallback}
+          styles={{
+            options: {
+              arrowColor: '#2a1a4a',
+              backgroundColor: '#16102b',
+              overlayColor: 'rgba(0, 0, 0, 0.75)',
+              primaryColor: '#b76dff',
+              textColor: '#e0e3e5',
+              zIndex: 1000,
+            },
+            tooltip: {
+              borderRadius: '20px',
+              border: '1px solid rgba(183, 109, 255, 0.2)',
+              boxShadow: '0 0 40px rgba(183, 109, 255, 0.15)',
+              padding: '16px',
+            },
+            tooltipContainer: {
+              textAlign: 'left',
+            },
+            tooltipTitle: {
+              fontSize: '16px',
+              fontWeight: 600,
+              color: '#ddb7ff',
+              marginBottom: '6px',
+            },
+            tooltipContent: {
+              fontSize: '13px',
+              lineHeight: '1.5',
+              color: 'rgba(255, 255, 255, 0.7)',
+            },
+            buttonNext: {
+              borderRadius: '10px',
+              padding: '6px 14px',
+              fontWeight: 600,
+              fontSize: '13px',
+            },
+            buttonBack: {
+              color: '#cfc2d6',
+            },
+            buttonSkip: {
+              color: '#cfc2d6',
+            }
+          }}
+        />
         
         {/* TopAppBar */}
         <header className="w-full top-0 sticky bg-white/5 backdrop-blur-xl transition-opacity duration-200 flex items-center justify-between px-5 h-16 z-40 border-b border-white/10 shadow-sm">
@@ -102,7 +189,7 @@ const Home = () => {
             <div className="w-10 h-10 rounded-full overflow-hidden border border-white/20 cursor-pointer hover:opacity-80 transition-opacity bg-white/10 animate-pulse">
               <img alt="User Profile" loading="lazy" className="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC94k3VGb5Ss-S0hfQJQZMduDlYwYtUq4hc3XsEG8u3BYRn--UK6_TThC-w6Lxk5i6XsVgHBS5hZBCItX1-PkRAO3eVBCPdVf_fl3VyD1KMmiKqdWVUPDK9SMwXgODxt62vKNI_2U32jm7ZzmXRpQrH-LSGsw2oUFN5Julm6bk6b7pgfRZhwGExiI-KkZDwjl6eGyLmiH32Q2N1vQ9mqeQs2UXMpeRpOOze3ZoIM3sRVrdsr58NuAsRVEzDCf8y2Tr09O44yDtcuxVh"/>
             </div>
-            <h1 className="font-headline-lg-mobile text-[24px] font-bold text-white hover:opacity-80 transition-opacity cursor-pointer">
+            <h1 className="font-headline-lg-mobile text-[18px] md:text-[20px] font-bold text-white hover:opacity-80 transition-opacity cursor-pointer">
               {userData ? `Hi 👋, ${userData.full_name.split(' ')[0]}` : 'TrustFund'}
             </h1>
           </div>
@@ -116,7 +203,7 @@ const Home = () => {
         <main className="px-5 py-6 flex flex-col gap-8">
           
           {/* Interactive Balance Card Stack */}
-          <div className="flex flex-col items-center">
+          <div className="flex flex-col items-center tour-wallet-cards">
             <div className="relative w-full h-[200px] mt-8 mb-4 cursor-pointer group" onClick={handleNextCard}>
               {cards.map((card, idx) => {
                 const position = (idx - activeIndex + cards.length) % cards.length;
@@ -179,7 +266,7 @@ const Home = () => {
 
           {/* Quick Actions */}
           <section className="grid grid-cols-4 gap-4">
-            <Link to="/wallet/top-up" className="flex flex-col items-center gap-3 group">
+            <Link to="/wallet/top-up" className="tour-top-up flex flex-col items-center gap-3 group">
               <div className="w-14 h-14 rounded-2xl glass-button flex items-center justify-center group-hover:bg-white/10 transition-all group-active:scale-90">
                 <span className="material-symbols-outlined text-white" style={{ fontVariationSettings: "'FILL' 0" }}>add_circle</span>
               </div>
@@ -192,7 +279,7 @@ const Home = () => {
               </div>
               <span className="font-label-sm text-white/60 group-hover:text-white transition-colors text-xs text-center">Lock</span>
             </Link>
-
+            
             <Link to="/withdraw" className="flex flex-col items-center gap-3 group">
               <div className="w-14 h-14 rounded-2xl glass-button flex items-center justify-center group-hover:bg-white/10 transition-all group-active:scale-90">
                 <span className="material-symbols-outlined text-white">output</span>
@@ -262,6 +349,7 @@ const Home = () => {
           </section>
 
         </main>
+        
       </div>
       <BottomNav />
     </div>
