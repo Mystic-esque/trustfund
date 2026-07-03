@@ -17,6 +17,7 @@ interface OrderDetails {
   escrowDeals: number;
   disputes: number;
   price: number;
+  vendorId: string;
 }
 
 const PublicOrderSummary = () => {
@@ -25,6 +26,15 @@ const PublicOrderSummary = () => {
   const [order, setOrder] = useState<OrderDetails | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) setCurrentUserId(user.id);
+    };
+    fetchUser();
+  }, []);
 
   useEffect(() => {
     const fetchOrder = async () => {
@@ -69,6 +79,7 @@ const PublicOrderSummary = () => {
           escrowDeals: vendor.completed_deals_count || 0,
           disputes: 0, // mock
           price: finalOrderData.amount,
+          vendorId: vendor.id,
         });
 
       } catch (err: any) {
@@ -191,12 +202,18 @@ const PublicOrderSummary = () => {
 
         {/* Footer / CTA */}
         <footer className="pt-8 space-y-8 flex flex-col items-center">
-          <button 
-            onClick={() => navigate(`/orders/${order.id}/lock`)}
-            className="w-full md:w-96 py-5 rounded-full bg-gradient-to-r from-[#b76dff] to-[#3e3c8f] text-white font-bold text-[20px] glow-violet hover:opacity-90 active:scale-95 transition-all shadow-[0_0_20px_rgba(183,109,255,0.3)]"
-          >
-            Secure Deal
-          </button>
+          {currentUserId !== order.vendorId ? (
+            <button 
+              onClick={() => navigate(`/orders/${order.id}/lock`)}
+              className="w-full md:w-96 py-5 rounded-full bg-gradient-to-r from-[#b76dff] to-[#3e3c8f] text-white font-bold text-[20px] glow-violet hover:opacity-90 active:scale-95 transition-all shadow-[0_0_20px_rgba(183,109,255,0.3)]"
+            >
+              Secure Deal
+            </button>
+          ) : (
+            <div className="w-full md:w-96 py-5 rounded-full bg-white/5 border border-white/10 text-white/50 font-bold text-[20px] text-center">
+              This is your deal
+            </div>
+          )}
           <div className="flex items-center gap-6 text-[#cfc2d6] opacity-40">
             <div className="flex items-center gap-1">
               <span className="material-symbols-outlined text-sm">lock</span>
