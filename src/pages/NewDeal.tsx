@@ -66,7 +66,7 @@ const NewDeal = () => {
       if (imageFile) {
         const fileExt = imageFile.name.split('.').pop();
         const fileName = `${linkSlug}-${Date.now()}.${fileExt}`;
-        const { data: uploadData, error: uploadError } = await supabase.storage
+        const { error: uploadError } = await supabase.storage
           .from('deal-images')
           .upload(fileName, imageFile);
 

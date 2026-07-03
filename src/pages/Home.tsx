@@ -225,7 +225,6 @@ const Home = () => {
               ) : (
                 orders.map((order) => {
                   const isVendor = order.vendor_id === user?.id;
-                  const displayName = isVendor ? "Buyer" : "Vendor"; // Simplified for now
                   
                   let statusClass = "bg-white/10 text-white/80 border border-white/20";
                   if (order.status === "COMPLETED" || order.status === "SETTLED") {

@@ -6,7 +6,6 @@ import './Profile.css';
 
 const Profile = () => {
   const navigate = useNavigate();
-  const [user, setUser] = useState<any>(null);
   const [userData, setUserData] = useState<any>(null);
   const [activeEscrows, setActiveEscrows] = useState<number>(0);
 
@@ -17,7 +16,6 @@ const Profile = () => {
         navigate('/signin');
         return;
       }
-      setUser(user);
 
       const { data: profile } = await supabase
         .from('users')
