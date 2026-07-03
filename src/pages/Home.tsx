@@ -1,36 +1,88 @@
-import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import BottomNav from '../components/BottomNav';
+import { supabase } from '../lib/supabase';
 import './Home.css';
 
 const Home = () => {
   const [isBalanceVisible, setIsBalanceVisible] = useState(true);
   const [activeIndex, setActiveIndex] = useState(0);
+  const [user, setUser] = useState<any>(null);
+  const [userData, setUserData] = useState<any>(null);
+  const [orders, setOrders] = useState<any[]>([]);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        navigate('/signin');
+        return;
+      }
+      setUser(user);
+
+      const { data: profile } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', user.id)
+        .single();
+      
+      if (profile) setUserData(profile);
+
+      // Fetch recent orders
+      const { data: userOrders } = await supabase
+        .from('orders')
+        .select('*')
+        .or(`vendor_id.eq.${user.id},buyer_id.eq.${user.id}`)
+        .order('created_at', { ascending: false })
+        .limit(3);
+      
+      if (userOrders) setOrders(userOrders);
+    };
+
+    fetchUser();
+
+    // Subscribe to realtime balance updates
+    const subscription = supabase
+      .channel('public:users')
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'users' }, (payload) => {
+        setUserData(payload.new);
+      })
+      .subscribe();
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, [navigate]);
 
   const toggleBalance = (e: React.MouseEvent) => {
     e.stopPropagation();
     setIsBalanceVisible(!isBalanceVisible);
   };
 
+  const formatMoney = (amount: number) => {
+    return Number(amount || 0).toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  };
+
   const cards = [
     {
       id: 0,
       title: 'Available Balance',
-      amount: '24,500.00',
+      amount: userData ? formatMoney(userData.available_balance) : '0.00',
       tag: 'Secured by TrustGuard™',
       gradient: 'bg-gradient-to-br from-primary-container to-secondary-container'
     },
     {
       id: 1,
       title: 'Escrow Balance',
-      amount: '5,000.00',
+      amount: userData ? formatMoney(userData.escrow_balance) : '0.00',
       tag: 'Locked in Active Deals',
       gradient: 'bg-gradient-to-br from-[#0F766E] to-[#042F2E] border-white/10'
     },
     {
       id: 2,
       title: 'Pending Release',
-      amount: '12,400.00',
+      amount: userData ? formatMoney(userData.pending_balance) : '0.00',
       tag: 'Awaiting Buyer Confirmation',
       gradient: 'bg-gradient-to-br from-[#1D4ED8] to-[#172554] border-white/10'
     }
@@ -50,7 +102,9 @@ const Home = () => {
             <div className="w-10 h-10 rounded-full overflow-hidden border border-white/20 cursor-pointer hover:opacity-80 transition-opacity bg-white/10 animate-pulse">
               <img alt="User Profile" loading="lazy" className="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC94k3VGb5Ss-S0hfQJQZMduDlYwYtUq4hc3XsEG8u3BYRn--UK6_TThC-w6Lxk5i6XsVgHBS5hZBCItX1-PkRAO3eVBCPdVf_fl3VyD1KMmiKqdWVUPDK9SMwXgODxt62vKNI_2U32jm7ZzmXRpQrH-LSGsw2oUFN5Julm6bk6b7pgfRZhwGExiI-KkZDwjl6eGyLmiH32Q2N1vQ9mqeQs2UXMpeRpOOze3ZoIM3sRVrdsr58NuAsRVEzDCf8y2Tr09O44yDtcuxVh"/>
             </div>
-            <h1 className="font-headline-lg-mobile text-[24px] font-bold text-white hover:opacity-80 transition-opacity cursor-pointer">TrustFund</h1>
+            <h1 className="font-headline-lg-mobile text-[24px] font-bold text-white hover:opacity-80 transition-opacity cursor-pointer">
+              {userData ? `Hi 👋, ${userData.full_name.split(' ')[0]}` : 'TrustFund'}
+            </h1>
           </div>
           <div className="flex items-center gap-3">
             <button className="text-white/80 hover:text-white transition-opacity p-2 rounded-full hover:bg-white/10">
@@ -134,19 +188,19 @@ const Home = () => {
 
             <Link to="/lock" className="flex flex-col items-center gap-3 group">
               <div className="w-14 h-14 rounded-2xl glass-button flex items-center justify-center group-hover:bg-white/10 transition-all group-active:scale-90">
-                <span className="material-symbols-outlined text-white">lock_outline</span>
+                <span className="material-symbols-outlined text-white">lock</span>
               </div>
               <span className="font-label-sm text-white/60 group-hover:text-white transition-colors text-xs text-center">Lock</span>
             </Link>
 
-            <Link to="#" className="flex flex-col items-center gap-3 group">
+            <Link to="/withdraw" className="flex flex-col items-center gap-3 group">
               <div className="w-14 h-14 rounded-2xl glass-button flex items-center justify-center group-hover:bg-white/10 transition-all group-active:scale-90">
                 <span className="material-symbols-outlined text-white">output</span>
               </div>
               <span className="font-label-sm text-white/60 group-hover:text-white transition-colors text-xs text-center">Withdraw</span>
             </Link>
 
-            <Link to="#" className="flex flex-col items-center gap-3 group">
+            <Link to="/orders" className="flex flex-col items-center gap-3 group">
               <div className="w-14 h-14 rounded-2xl glass-button flex items-center justify-center group-hover:bg-white/10 transition-all group-active:scale-90">
                 <span className="material-symbols-outlined text-white">key</span>
               </div>
@@ -162,56 +216,49 @@ const Home = () => {
             </div>
 
             <div className="flex flex-col gap-4">
-              {/* Deal Item 1 */}
-              <Link to="/orders/1" className="glass-container rounded-2xl p-4 flex items-center justify-between hover:bg-white/[0.06] transition-all cursor-pointer active:scale-[0.98]">
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-full overflow-hidden bg-white/10 border border-white/20 shrink-0 animate-pulse">
-                    <img alt="Deal Avatar" loading="lazy" className="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB1i5Hqqd1pQSV9eYplnqM7xezicFeKBKQvZhG3YaID8nz7lA3OHlH0U6y2bSq1Yu-z9QVIzpP0kSCkKCGRYoowOiky2tlxhUbTASVryQuRKe_xiF_hoASaKUSDI9x1T2TerkY7qXcpCZoeyUOE5t1HZJ0eZ3-_eK-QlOvmmo1rW9PXfethwePQNvJViJb-6R1oDjzi12bOKSXw1WWVLvHHfLJcov-wmYNLonldzeXLtlJ9ZsnqqMh__uWaP1dcOzrKcOx4caa7py0W"/>
-                  </div>
-                  <div className="flex flex-col">
-                    <span className="font-body-md text-white font-medium">@alex_chen</span>
-                    <span className="font-label-sm text-white/50 text-xs">Rolex Submariner</span>
-                  </div>
+              {orders.length === 0 ? (
+                <div className="glass-container rounded-2xl p-8 flex flex-col items-center justify-center text-center opacity-70">
+                  <span className="material-symbols-outlined text-4xl text-white/50 mb-3">handshake</span>
+                  <p className="font-body-md text-white/80">No deals yet.</p>
+                  <p className="font-label-sm text-white/50 mt-1">Create a deal to get started.</p>
                 </div>
-                <div className="flex flex-col items-end gap-1">
-                  <span className="font-body-md text-white font-semibold">₦12,400.00</span>
-                  <div className="bg-primary/20 text-primary border border-primary/30 px-2 py-0.5 rounded text-[10px] font-bold tracking-wider uppercase">IN TRANSIT</div>
-                </div>
-              </Link>
+              ) : (
+                orders.map((order) => {
+                  const isVendor = order.vendor_id === user?.id;
+                  const displayName = isVendor ? "Buyer" : "Vendor"; // Simplified for now
+                  
+                  let statusClass = "bg-white/10 text-white/80 border border-white/20";
+                  if (order.status === "COMPLETED" || order.status === "SETTLED") {
+                    statusClass = "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30";
+                  } else if (order.status === "IN_TRANSIT" || order.status === "DELIVERED_PENDING_RELEASE") {
+                    statusClass = "bg-primary/20 text-primary border border-primary/30";
+                  }
 
-              {/* Deal Item 2 */}
-              <Link to="/orders/2" className="glass-container rounded-2xl p-4 flex items-center justify-between hover:bg-white/[0.06] transition-all cursor-pointer active:scale-[0.98]">
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-full overflow-hidden bg-white/10 border border-white/20 shrink-0 animate-pulse">
-                    <img alt="Deal Avatar" loading="lazy" className="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCFYtuYxBk9p4vqNrIF-XHdz0uqIEdYFYAE2FcBT7JIwJWHc5Nam8nWB7jPaGNlx2qa1vThU0Gt9MIarxTv1jf7-0u2Ss04G2a1-yHvrct3I9cXq0Hh0RflbJ013f-RBM5RlkuiANChVylaQOq40jkhf9ug85eUNc4O1Ypp1ataVlfj1QF7JpR5mM1SxIH5FjZbsswq_k3CYrspDBovEM1KAJlSqXj8Ju71PYGbtKU6MJQdnw_8OdeGipXrEJnLhEw2RG9-tiJtJouo"/>
-                  </div>
-                  <div className="flex flex-col">
-                    <span className="font-body-md text-white font-medium">@sarah_j</span>
-                    <span className="font-label-sm text-white/50 text-xs">Vintage Porsche Deposit</span>
-                  </div>
-                </div>
-                <div className="flex flex-col items-end gap-1">
-                  <span className="font-body-md text-white font-semibold">₦5,000.00</span>
-                  <div className="bg-white/10 text-white/80 border border-white/20 px-2 py-0.5 rounded text-[10px] font-bold tracking-wider uppercase">LOCKED</div>
-                </div>
-              </Link>
-
-              {/* Deal Item 3 */}
-              <Link to="/orders/3" className="glass-container rounded-2xl p-4 flex items-center justify-between hover:bg-white/[0.06] transition-all cursor-pointer active:scale-[0.98] opacity-70">
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-full overflow-hidden bg-white/10 border border-white/20 shrink-0 animate-pulse">
-                    <img alt="Deal Avatar" loading="lazy" className="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCLKrj0jYZ0G0EkL8atq85fsaED403aVrn7rcN8354ACYUh3xCXc1THZ8B5xqFlF48DX7g_ClBgJHGAH4IHTA4D8KoBf2hx81MdERJb60CvjHpCfSc3i3dJUCfTkIID4WimW7qB2xV-qYdPn_GlaNfVxBltGgOdtjNqxZk9gQuqyEAhqSzBMCOU1Ea5LcdIBNfgUxtx9Y6XRmyKwiNx-M3Nc86t09u0vOHchuNZViJZw_taV03lNPE_IIcTMIB0Sz4-qMOMsmFXATiq"/>
-                  </div>
-                  <div className="flex flex-col">
-                    <span className="font-body-md text-white font-medium">@dev_mike</span>
-                    <span className="font-label-sm text-white/50 text-xs">Freelance Dev Milestone</span>
-                  </div>
-                </div>
-                <div className="flex flex-col items-end gap-1">
-                  <span className="font-body-md text-white font-semibold">₦3,200.00</span>
-                  <div className="bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded text-[10px] font-bold tracking-wider uppercase">COMPLETED</div>
-                </div>
-              </Link>
+                  return (
+                    <Link key={order.id} to={`/orders/${order.id}`} className="glass-container rounded-2xl p-4 flex items-center justify-between hover:bg-white/[0.06] transition-all cursor-pointer active:scale-[0.98]">
+                      <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 rounded-full overflow-hidden bg-white/10 border border-white/20 shrink-0 flex items-center justify-center">
+                          {order.item_image_url ? (
+                            <img src={order.item_image_url} alt="Product" className="w-full h-full object-cover" />
+                          ) : (
+                            <span className="material-symbols-outlined text-white/50">shopping_bag</span>
+                          )}
+                        </div>
+                        <div className="flex flex-col">
+                          <span className="font-body-md text-white font-medium">{order.item_name}</span>
+                          <span className="font-label-sm text-white/50 text-xs">{isVendor ? 'Selling' : 'Buying'} • {order.reference_id}</span>
+                        </div>
+                      </div>
+                      <div className="flex flex-col items-end gap-1">
+                        <span className="font-body-md text-white font-semibold">₦{formatMoney(order.amount)}</span>
+                        <div className={`${statusClass} px-2 py-0.5 rounded text-[10px] font-bold tracking-wider uppercase`}>
+                          {order.status.replace(/_/g, ' ')}
+                        </div>
+                      </div>
+                    </Link>
+                  );
+                })
+              )}
             </div>
           </section>
 

@@ -1,18 +1,41 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import toast from 'react-hot-toast';
 import BottomNav from '../components/BottomNav';
+import { supabase } from '../lib/supabase';
 import './NewDeal.css';
 
 const NewDeal = () => {
   const navigate = useNavigate();
   const [title, setTitle] = useState('');
+  const [description, setDescription] = useState('');
   const [amount, setAmount] = useState('');
+  const [timeframe, setTimeframe] = useState('1-3');
   const [agreed, setAgreed] = useState(false);
   const [image, setImage] = useState<string | null>(null);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [user, setUser] = useState<any>(null);
+  const [userData, setUserData] = useState<any>(null);
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        navigate('/signin');
+        return;
+      }
+      setUser(user);
+      const { data: profile } = await supabase.from('users').select('*').eq('id', user.id).single();
+      if (profile) setUserData(profile);
+    };
+    fetchUser();
+  }, [navigate]);
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      setImageFile(file);
       const reader = new FileReader();
       reader.onload = (event) => {
         setImage(event.target?.result as string);
@@ -22,18 +45,67 @@ const NewDeal = () => {
   };
 
   const amountVal = parseFloat(amount) || 0;
-  const fee = amountVal * 0.03;
+  const fee = amountVal * 0.015; // 1.5% platform fee
   const net = amountVal - fee;
 
   const displayTitle = title.trim() || 'New Deal';
   
   const formatMoney = (val: number) => {
-    return '₦ ' + val.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    return '₦ ' + val.toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   };
 
-  const handleGenerateLink = () => {
-    // Placeholder logic for creating the deal
-    navigate('/orders/1/share');
+  const handleGenerateLink = async () => {
+    if (!user || isSubmitting) return;
+    setIsSubmitting(true);
+
+    try {
+      const linkSlug = Math.random().toString(36).substring(2, 8).toUpperCase();
+      const referenceId = `TF-${new Date().getFullYear()}-${linkSlug}`;
+
+      let itemImageUrl = null;
+      if (imageFile) {
+        const fileExt = imageFile.name.split('.').pop();
+        const fileName = `${linkSlug}-${Date.now()}.${fileExt}`;
+        const { data: uploadData, error: uploadError } = await supabase.storage
+          .from('deal-images')
+          .upload(fileName, imageFile);
+
+        if (uploadError) throw uploadError;
+
+        const { data: publicUrlData } = supabase.storage
+          .from('deal-images')
+          .getPublicUrl(fileName);
+        
+        itemImageUrl = publicUrlData.publicUrl;
+      }
+
+      const { data, error } = await supabase
+        .from('orders')
+        .insert({
+          link_slug: linkSlug,
+          reference_id: referenceId,
+          vendor_id: user.id,
+          item_name: title.trim(),
+          item_description: description.trim(),
+          amount: amountVal,
+          platform_fee: fee,
+          net_payout: net,
+          delivery_window: timeframe,
+          status: 'PENDING_PAYMENT',
+          item_image_url: itemImageUrl
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      toast.success('Deal created successfully!');
+      navigate(`/orders/${data.id}/share`);
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to create deal');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -100,6 +172,8 @@ const NewDeal = () => {
             <textarea 
               className="glass-input-new-deal rounded-xl min-h-[120px] p-4 font-medium leading-relaxed w-full bg-transparent" 
               placeholder="Describe the item condition, size, and inclusions..."
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
             ></textarea>
           </div>
         </section>
@@ -123,7 +197,11 @@ const NewDeal = () => {
             <div className="flex flex-col gap-2">
               <label className="text-sm font-semibold text-on-surface-variant uppercase tracking-wider px-1">Fulfillment Timeframe</label>
               <div className="relative">
-                <select className="glass-input-new-deal rounded-xl h-14 px-4 w-full font-medium appearance-none bg-transparent">
+                <select 
+                  className="glass-input-new-deal rounded-xl h-14 px-4 w-full font-medium appearance-none bg-transparent"
+                  value={timeframe}
+                  onChange={(e) => setTimeframe(e.target.value)}
+                >
                   <option value="1-3" className="text-black">1-3 Days</option>
                   <option value="3-5" className="text-black">3-5 Days</option>
                   <option value="5-7" className="text-black">5-7 Days</option>
@@ -137,7 +215,7 @@ const NewDeal = () => {
           {/* Pricing Breakdown */}
           <div className="mt-2 p-4 rounded-xl bg-white/5 border border-white/5 space-y-2">
             <div className="flex justify-between items-center">
-              <span className="text-on-surface-variant text-sm">Escrow Fee (3%)</span>
+              <span className="text-on-surface-variant text-sm">Escrow Fee (1.5%)</span>
               <span className="text-white font-medium">{formatMoney(fee)}</span>
             </div>
             <div className="flex justify-between items-center pt-2 border-t border-white/5">
@@ -181,7 +259,7 @@ const NewDeal = () => {
                   <div className="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center">
                     <span className="material-symbols-outlined text-primary text-[14px]" style={{ fontVariationSettings: "'FILL' 1" }}>verified</span>
                   </div>
-                  <span className="text-xs font-semibold text-on-surface-variant">@vendor_name</span>
+                  <span className="text-xs font-semibold text-on-surface-variant">@{userData ? userData.full_name.split(' ').join('_').toLowerCase() : 'vendor_name'}</span>
                 </div>
                 <h2 className="text-lg font-bold text-white leading-tight mb-2 truncate">{displayTitle}</h2>
                 <div className="text-2xl font-bold text-primary">{formatMoney(amountVal)}</div>
@@ -193,12 +271,12 @@ const NewDeal = () => {
         {/* CTA */}
         <div className="mt-4 mb-10">
           <button 
-            className={`btn-gradient w-full h-16 rounded-2xl font-bold text-white shadow-xl transition-all flex items-center justify-center gap-3 ${(!agreed || amountVal <= 0 || !title.trim()) ? 'opacity-50 cursor-not-allowed' : 'active:scale-95'}`} 
-            disabled={!agreed || amountVal <= 0 || !title.trim()}
+            className={`btn-gradient w-full h-16 rounded-2xl font-bold text-white shadow-xl transition-all flex items-center justify-center gap-3 ${(!agreed || amountVal <= 0 || !title.trim() || isSubmitting) ? 'opacity-50 cursor-not-allowed' : 'active:scale-95'}`} 
+            disabled={!agreed || amountVal <= 0 || !title.trim() || isSubmitting}
             onClick={handleGenerateLink}
           >
-            <span className="material-symbols-outlined">link</span>
-            Generate Deal Link
+            <span className="material-symbols-outlined">{isSubmitting ? 'hourglass_top' : 'link'}</span>
+            {isSubmitting ? 'Creating Deal...' : 'Generate Deal Link'}
           </button>
           <p className="text-center text-xs text-on-surface-variant/50 mt-4 px-10 leading-relaxed font-medium">
             A unique, secure escrow link will be generated for your buyer to pay via bank transfer or card.

@@ -1,24 +1,69 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
+import { supabase } from '../lib/supabase';
 import './LockFunds.css';
 
 const LockFunds = () => {
+  const { id } = useParams();
   const navigate = useNavigate();
   const [isSuccess, setIsSuccess] = useState(false);
-
-  // MOCK DATA: Change these to test both states
-  const userBalance = 200000;
-  // const dealPrice = 250000; // Insufficient
-  const dealPrice = 154500; // Sufficient
+  const [isLoading, setIsLoading] = useState(true);
+  const [isLocking, setIsLocking] = useState(false);
   
-  const isSufficient = userBalance >= dealPrice;
+  const [order, setOrder] = useState<any>(null);
+  const [userData, setUserData] = useState<any>(null);
 
-  const handleLock = () => {
-    setIsSuccess(true);
-    setTimeout(() => {
-      navigate('/orders');
-    }, 2500);
+  useEffect(() => {
+    const fetchContext = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        navigate(`/signin?redirect=/orders/${id}/lock`);
+        return;
+      }
+
+      const { data: profile } = await supabase.from('users').select('*').eq('id', user.id).single();
+      if (profile) setUserData(profile);
+
+      if (id) {
+        const { data: orderData } = await supabase
+          .from('orders')
+          .select('*, vendor:users!orders_vendor_id_fkey(full_name, completed_deals_count)')
+          .eq('id', id)
+          .single();
+        if (orderData) setOrder(orderData);
+      }
+
+      setIsLoading(false);
+    };
+
+    fetchContext();
+  }, [id, navigate]);
+
+  const handleLock = async () => {
+    if (isLocking) return;
+    setIsLocking(true);
+    
+    try {
+      const res = await supabase.functions.invoke('lock-funds', {
+        body: { orderId: id, buyerId: userData?.id }
+      });
+
+      if (res.error || !res.data?.success) {
+        throw new Error(res.error?.message || res.data?.error || "Failed to lock funds");
+      }
+
+      setIsSuccess(true);
+      setTimeout(() => {
+        navigate(`/orders/${id}`);
+      }, 2500);
+
+    } catch (err: any) {
+      console.error(err);
+      toast.error(err.message || 'An error occurred while locking funds');
+    } finally {
+      setIsLocking(false);
+    }
   };
 
   const handleCopy = (text: string) => {
@@ -31,6 +76,18 @@ const LockFunds = () => {
       }
     });
   };
+
+  if (isLoading) {
+    return <div className="min-h-screen bg-[#101415] flex items-center justify-center"><div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div></div>;
+  }
+
+  if (!order || !userData) {
+    return <div className="min-h-screen bg-[#101415] flex items-center justify-center text-white">Order not found.</div>;
+  }
+
+  const userBalance = Number(userData.available_balance || 0);
+  const dealPrice = Number(order.amount);
+  const isSufficient = userBalance >= dealPrice;
 
   if (!isSufficient) {
     // Insufficient Balance UI
@@ -67,11 +124,11 @@ const LockFunds = () => {
             <div className="flex justify-between items-center mb-6 pb-6 border-b border-white/10">
               <div>
                 <span className="text-xs text-white/50 uppercase tracking-widest block mb-1">Available</span>
-                <span className="font-title-md text-lg text-white font-medium">₦{userBalance.toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
+                <span className="font-title-md text-lg text-white font-medium">₦{userBalance.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
               </div>
               <div className="text-right">
                 <span className="text-xs text-white/50 uppercase tracking-widest block mb-1">Required</span>
-                <span className="font-title-md text-lg text-error font-semibold text-[#ffb4ab]">₦{dealPrice.toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
+                <span className="font-title-md text-lg text-error font-semibold text-[#ffb4ab]">₦{dealPrice.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
               </div>
             </div>
             
@@ -80,7 +137,7 @@ const LockFunds = () => {
                 <span className="material-symbols-outlined text-error text-[#ffb4ab]">warning</span>
                 <span className="text-sm font-medium text-white/90">Shortfall</span>
               </div>
-              <span className="font-title-md font-bold text-[#ffb4ab]">₦{(dealPrice - userBalance).toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
+              <span className="font-title-md font-bold text-[#ffb4ab]">₦{(dealPrice - userBalance).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
             </div>
           </section>
 
@@ -92,15 +149,15 @@ const LockFunds = () => {
             <div className="space-y-4 relative z-10">
               <div>
                 <span className="text-[10px] text-white/40 uppercase tracking-widest block mb-1">Bank Name</span>
-                <span className="text-sm font-bold text-white tracking-wide">Providus Bank (TrustFund)</span>
+                <span className="text-sm font-bold text-white tracking-wide">{userData?.nomba_bank_name || 'Nomba MFB'}</span>
               </div>
               
               <div>
                 <span className="text-[10px] text-white/40 uppercase tracking-widest block mb-1">Account Number</span>
                 <div className="flex justify-between items-center bg-[#060608] border border-white/10 rounded-xl p-3">
-                  <span className="text-xl font-bold text-white tracking-widest font-title-md">990 123 4567</span>
+                  <span className="text-xl font-bold text-white tracking-widest font-title-md">{userData?.nomba_virtual_account_number || 'Pending'}</span>
                   <button 
-                    onClick={() => handleCopy('9901234567')}
+                    onClick={() => handleCopy(userData?.nomba_virtual_account_number || '')}
                     className="text-primary hover:text-primary-hover active:scale-95 transition-all p-2 rounded-lg bg-primary/10"
                   >
                     <span className="material-symbols-outlined text-[20px]">content_copy</span>
@@ -126,21 +183,22 @@ const LockFunds = () => {
           <img src="/images/logo.svg" alt="TrustFund Logo" className="h-8 w-8 object-contain" />
           <span className="font-headline-lg-mobile md:font-headline-lg tracking-tighter text-[#ddb7ff] uppercase">TRUSTFUND</span>
         </div>
-        <div className="w-10 h-10 rounded-full border border-white/20 flex items-center justify-center overflow-hidden">
-          <img className="w-full h-full object-cover" alt="User" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCS8ms8_oPndj3guDoGP_XC-qV3_pXihFufsps-QkbryAlcug268fpu4CdE4NEKAMNfDQhJ8GT-L-6orF2u3Fb64YgxaKSAmcSZS1EscPqMe50oMYUZhDdgLHhD-PB_ZsCkPv7y7cNxHUWFejVLL78-XPUOMqWOLFN7SUyZ_ZLKz8Fflb851PJEAUpGEffwHxX7_Dt-Wqspsg5oVHutA3-CHXv2Pk8l_-QsT3Jv-LIyTEV4rYPkV3gUCv_HvPvEXwUs6XgVznbREC79" />
-        </div>
       </header>
 
       <main className="flex-grow pt-32 pb-10 px-5 max-w-lg mx-auto w-full relative z-10">
         {/* Order Context Mini-Banner */}
         <div className="mb-8 rounded-xl p-4 flex items-center gap-4 animate-in fade-in slide-in-from-top duration-700" style={{ background: 'rgba(255, 255, 255, 0.05)', backdropFilter: 'blur(40px)', border: '1px solid rgba(255, 255, 255, 0.1)' }}>
-          <div className="w-16 h-16 rounded-lg overflow-hidden flex-shrink-0 border border-white/10">
-            <img className="w-full h-full object-cover" alt="Jacket" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBwiqyZYWqec4TDRmsE7NPoER4oMSZq1gZKVPler3uo9VfCCf3w0WEulOgtaHipHTk_EP6NYBn-Rw9zXz5Pw6Sxs31BcRTBpbGcnhK_3yKJKmmZ_GHRL4f7GQ75e29pSx6xmlhSm2oC9VUSaBfuLlyMOufnU3gB28OD-pxp6zJfRRCXsQXlhcwc7Q2SHJrmkI6iFb0f-w8Zvz5B2ojw_AHrMRK8_aniCbRyJA3OhIbEJ7VugK79jonDCAV3DaVBJx5KTUdFppCXyno4" />
+          <div className="w-16 h-16 rounded-lg overflow-hidden flex-shrink-0 border border-white/10 bg-white/10 flex items-center justify-center">
+            {order.item_image_url ? (
+              <img src={order.item_image_url} alt="Product" className="w-full h-full object-cover" />
+            ) : (
+              <span className="material-symbols-outlined text-white/50 text-2xl">shopping_bag</span>
+            )}
           </div>
           <div className="flex-grow">
             <p className="text-[12px] font-semibold text-[#cfc2d6] opacity-70 uppercase tracking-wider">Escrow Order</p>
-            <h3 className="text-[20px] font-medium text-[#e0e3e5]">Vintage 90s Nike Jacket</h3>
-            <p className="text-[16px] text-[#ddb7ff]">₦150,000</p>
+            <h3 className="text-[20px] font-medium text-[#e0e3e5]">{order.item_name}</h3>
+            <p className="text-[16px] text-[#ddb7ff]">₦{dealPrice.toLocaleString()}</p>
           </div>
         </div>
 
@@ -148,24 +206,10 @@ const LockFunds = () => {
         <div className="rounded-[32px] p-8 mb-8 relative overflow-hidden animate-in fade-in zoom-in duration-1000 delay-200" style={{ background: 'rgba(255, 255, 255, 0.05)', backdropFilter: 'blur(40px)', border: '1px solid rgba(255, 255, 255, 0.1)' }}>
           <div className="text-center mb-8">
             <p className="text-[12px] font-semibold text-[#cfc2d6] uppercase tracking-[0.2em] mb-2">Escrow Total</p>
-            <h1 className="text-[32px] md:text-[40px] font-semibold text-[#e0e3e5]">₦151,500</h1>
+            <h1 className="text-[32px] md:text-[40px] font-semibold text-[#e0e3e5]">₦{dealPrice.toLocaleString('en-US', {minimumFractionDigits: 2})}</h1>
             <div className="flex items-center justify-center gap-2 mt-4 py-2 px-4 bg-[#ddb7ff]/10 border border-[#ddb7ff]/20 rounded-full w-fit mx-auto">
               <span className="material-symbols-outlined text-[#ddb7ff] text-[20px]" style={{ fontVariationSettings: "'FILL' 1" }}>verified_user</span>
               <span className="text-[12px] font-semibold text-[#ddb7ff] uppercase">Secured by Aetheric Protocol</span>
-            </div>
-          </div>
-          <div className="space-y-4 border-t border-white/5 pt-8">
-            <div className="flex justify-between items-center py-1">
-              <span className="text-[16px] text-[#cfc2d6]">Purchase Price</span>
-              <span className="text-[16px] text-[#e0e3e5]">₦150,000</span>
-            </div>
-            <div className="flex justify-between items-center py-1">
-              <span className="text-[16px] text-[#cfc2d6]">Service Fee (1.0%)</span>
-              <span className="text-[16px] text-[#e0e3e5]">₦1,500</span>
-            </div>
-            <div className="pt-6 mt-6 border-t border-white/10 flex justify-between items-center">
-              <span className="text-[20px] text-[#e0e3e5] font-bold uppercase tracking-tight">Total Commitment</span>
-              <span className="text-[24px] text-[#ddb7ff] font-bold">₦151,500</span>
             </div>
           </div>
         </div>
@@ -178,18 +222,18 @@ const LockFunds = () => {
               <span className="text-[12px] font-semibold text-[#cfc2d6] uppercase tracking-wider">Wallet Status</span>
             </div>
             <div className="flex flex-col justify-start md:justify-center">
-              <p className="text-[20px] font-medium text-[#e0e3e5]">Available: ₦200,000</p>
+              <p className="text-[20px] font-medium text-[#e0e3e5]">Available: ₦{userBalance.toLocaleString()}</p>
               <p className="text-[12px] font-semibold text-emerald-400">Ready to lock ✓</p>
             </div>
           </div>
           <div className="space-y-2 pt-4 border-t border-white/5">
             <div className="flex justify-between items-center">
               <span className="text-[16px] text-[#cfc2d6] opacity-70">After locking, available balance</span>
-              <span className="text-[16px] text-[#cfc2d6] opacity-70">₦48,500</span>
+              <span className="text-[16px] text-[#cfc2d6] opacity-70">₦{(userBalance - dealPrice).toLocaleString()}</span>
             </div>
             <div className="flex justify-between items-center">
               <span className="text-[16px] text-[#cfc2d6] opacity-70">Locked for this deal</span>
-              <span className="text-[16px] text-[#e0e3e5]">₦151,500</span>
+              <span className="text-[16px] text-[#e0e3e5]">₦{dealPrice.toLocaleString()}</span>
             </div>
           </div>
         </div>
@@ -202,15 +246,12 @@ const LockFunds = () => {
                 <span className="material-symbols-outlined text-[#cfc2d6]">storefront</span>
               </div>
               <div>
-                <p className="text-[20px] font-medium text-[#e0e3e5]">Steve Vintage Co.</p>
+                <p className="text-[20px] font-medium text-[#e0e3e5]">{order.vendor?.full_name || 'Vendor'}</p>
                 <div className="flex items-center gap-1">
                   <span className="material-symbols-outlined text-[#ddb7ff] text-[14px]" style={{ fontVariationSettings: "'FILL' 1" }}>star</span>
-                  <span className="text-[12px] font-semibold text-[#cfc2d6]">4.9/5.0 Trust Rating</span>
+                  <span className="text-[12px] font-semibold text-[#cfc2d6]">{order.vendor?.completed_deals_count || 0} Deals Completed</span>
                 </div>
               </div>
-            </div>
-            <div className="px-3 py-1 bg-emerald-500/10 border border-emerald-500/20 rounded-full w-fit">
-              <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-tighter">Verified Merchant</span>
             </div>
           </div>
         </div>
@@ -220,11 +261,12 @@ const LockFunds = () => {
           <div className="max-w-lg mx-auto text-center">
             <button 
               onClick={handleLock}
-              className="w-full h-16 rounded-full bg-[#ddb7ff] text-[#490080] font-medium text-[20px] flex items-center justify-center gap-3 transition-all active:scale-95 hover:opacity-90"
+              disabled={isLocking}
+              className={`w-full h-16 rounded-full bg-[#ddb7ff] text-[#490080] font-medium text-[20px] flex items-center justify-center gap-3 transition-all ${isLocking ? 'opacity-50 cursor-not-allowed' : 'active:scale-95 hover:opacity-90'}`}
               style={{ boxShadow: '0 0 20px rgba(168, 85, 247, 0.4)' }}
             >
-              <span>Lock Funds Now</span>
-              <span className="material-symbols-outlined">lock_open</span>
+              <span>{isLocking ? 'Locking Funds...' : 'Lock Funds Now'}</span>
+              <span className="material-symbols-outlined">{isLocking ? 'hourglass_top' : 'lock_open'}</span>
             </button>
             <p className="mt-4 text-[12px] font-semibold text-[#cfc2d6] opacity-60">
               By tapping, you authorize the transfer of funds into secure escrow.

@@ -1,0 +1,10 @@
+.modal-height-share {
+    height: 85vh;
+}
+@keyframes slideUpShare {
+    from { transform: translateY(100%); }
+    to { transform: translateY(0); }
+}
+.animate-slide-up-share {
+    animation: slideUpShare 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}

@@ -1,9 +1,49 @@
+import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import BottomNav from '../components/BottomNav';
+import { supabase } from '../lib/supabase';
 import './Profile.css';
 
 const Profile = () => {
   const navigate = useNavigate();
+  const [user, setUser] = useState<any>(null);
+  const [userData, setUserData] = useState<any>(null);
+  const [activeEscrows, setActiveEscrows] = useState<number>(0);
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        navigate('/signin');
+        return;
+      }
+      setUser(user);
+
+      const { data: profile } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', user.id)
+        .single();
+      
+      if (profile) setUserData(profile);
+
+      // Fetch active escrows count
+      const { count } = await supabase
+        .from('orders')
+        .select('*', { count: 'exact', head: true })
+        .eq('buyer_id', user.id)
+        .in('status', ['ESCROW_LOCKED', 'IN_TRANSIT', 'DELIVERED_PENDING_RELEASE', 'SETTLING', 'DISPUTED']);
+      
+      setActiveEscrows(count || 0);
+    };
+
+    fetchUser();
+  }, [navigate]);
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+    navigate('/signin');
+  };
 
   return (
     <div className="text-on-surface min-h-screen font-body-md pb-[100px]" style={{ background: 'radial-gradient(circle at top right, #1a1a2e 0%, #0a0a0a 100%)' }}>
@@ -42,10 +82,10 @@ const Profile = () => {
           
           <div className="text-center space-y-1">
             <div className="flex items-center justify-center gap-2">
-              <h2 className="font-headline-lg text-[28px] font-bold tracking-tight">Alexander Sterling</h2>
+              <h2 className="font-headline-lg text-[28px] font-bold tracking-tight">{userData?.full_name || 'Loading...'}</h2>
               <span className="material-symbols-outlined text-primary text-[20px]" style={{ fontVariationSettings: "'FILL' 1" }}>verified</span>
             </div>
-            <p className="text-primary font-body-md font-medium tracking-wide">@asterling.trust</p>
+            <p className="text-primary font-body-md font-medium tracking-wide">@{userData?.username || userData?.full_name?.split(' ')[0]?.toLowerCase() || 'user'}</p>
             
             <div className="pt-4 flex flex-col items-center gap-3">
               <button className="px-6 py-2 rounded-full glass-panel-profile border-primary/30 text-primary font-label-lg font-bold hover:bg-primary/10 transition-colors flex items-center gap-2">
@@ -67,14 +107,14 @@ const Profile = () => {
             <div className="relative overflow-hidden glass-panel-profile rounded-2xl p-5 aetheric-glow-profile border-primary/10">
               <p className="text-on-surface-variant font-label-sm uppercase tracking-wider mb-2 opacity-60 text-xs">Completed Deals</p>
               <div className="flex items-baseline gap-2">
-                <span className="font-headline-lg text-[28px] font-bold">42</span>
+                <span className="font-headline-lg text-[28px] font-bold">{userData?.completed_deals_count || 0}</span>
                 <span className="material-symbols-outlined text-tertiary text-lg">check_circle</span>
               </div>
             </div>
             <div className="relative overflow-hidden glass-panel-profile rounded-2xl p-5 border-primary/10">
               <p className="text-on-surface-variant font-label-sm uppercase tracking-wider mb-2 opacity-60 text-xs">Active Escrows</p>
               <div className="flex items-baseline gap-2">
-                <span className="font-headline-lg text-[28px] font-bold">5</span>
+                <span className="font-headline-lg text-[28px] font-bold">{activeEscrows}</span>
                 <span className="material-symbols-outlined text-secondary text-lg">sync</span>
               </div>
             </div>
@@ -90,7 +130,7 @@ const Profile = () => {
             <div className="p-4 flex items-center justify-between">
               <div>
                 <p className="text-label-sm text-on-surface-variant/60 uppercase tracking-wider text-xs">Wallet Balance</p>
-                <p className="font-headline-md text-[24px] font-bold text-primary">₦24,500.00</p>
+                <p className="font-headline-md text-[24px] font-bold text-primary">₦{Number(userData?.available_balance || 0).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</p>
               </div>
               <Link to="/wallet/top-up" className="bg-primary/10 text-primary p-2 rounded-xl border border-primary/20 hover:bg-primary/20 transition-colors">
                 <span className="material-symbols-outlined">add</span>
@@ -119,8 +159,8 @@ const Profile = () => {
                     <span className="material-symbols-outlined text-primary">account_balance</span>
                   </div>
                   <div>
-                    <p className="font-body-md font-semibold">Zenith Bank</p>
-                    <p className="text-label-sm text-on-surface-variant/60 text-xs">**** 1234 • SAVINGS</p>
+                    <p className="font-body-md font-semibold">{userData?.bank_name || 'Add Bank Account'}</p>
+                    <p className="text-label-sm text-on-surface-variant/60 text-xs">{userData?.bank_account_number ? `**** ${userData.bank_account_number.slice(-4)}` : 'No bank linked'}</p>
                   </div>
                 </div>
                 <span className="material-symbols-outlined text-on-surface-variant/40">chevron_right</span>
@@ -200,7 +240,10 @@ const Profile = () => {
         </section>
 
         {/* Sign Out */}
-        <button className="w-full p-5 flex items-center justify-center gap-2 text-error hover:bg-error/5 transition-colors group rounded-2xl border border-error/10 mt-6 active:scale-[0.98] duration-200">
+        <button 
+          onClick={handleSignOut}
+          className="w-full p-5 flex items-center justify-center gap-2 text-error hover:bg-error/5 transition-colors group rounded-2xl border border-error/10 mt-6 active:scale-[0.98] duration-200"
+        >
           <span className="material-symbols-outlined">logout</span>
           <span className="font-label-lg font-bold uppercase tracking-widest text-sm">Sign Out</span>
         </button>

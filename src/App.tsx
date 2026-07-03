@@ -18,7 +18,7 @@ const Wallet = () => <div className="p-8">Wallet</div>;
 import NewDeal from './pages/NewDeal';
 import Orders from './pages/Orders';
 const DealTimeline = () => <div className="p-8">Deal Timeline</div>;
-const ShareDeal = () => <div className="p-8">Share Deal</div>;
+import ShareDeal from './pages/ShareDeal';
 import LockFunds from './pages/LockFunds';
 import LockFundsParser from './pages/LockFundsParser';
 const DealChat = () => <div className="p-8">Deal Chat</div>;

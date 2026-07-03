@@ -1,11 +1,17 @@
 import { useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
+import { supabase } from '../lib/supabase';
 import './Auth.css';
 
 const SignIn = () => {
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
 
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
@@ -18,12 +24,30 @@ const SignIn = () => {
     return () => window.removeEventListener('mousemove', handleMouseMove);
   }, []);
 
-  const handleSignIn = (e: React.FormEvent) => {
+  const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
-    toast.success('Signed in successfully! Redirecting...');
-    setTimeout(() => {
-      navigate('/home');
-    }, 1500);
+    if (isLoading) return;
+    setIsLoading(true);
+
+    try {
+      const { error } = await supabase.auth.signInWithPassword({
+        email: email,
+        password: password,
+      });
+
+      if (error) throw error;
+
+      toast.success('Signed in successfully! Redirecting...');
+      
+      const redirectUrl = searchParams.get('redirect') || '/home';
+      setTimeout(() => {
+        navigate(redirectUrl);
+      }, 1500);
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to sign in');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -61,8 +85,10 @@ const SignIn = () => {
             <div className="relative">
               <input 
                 className="w-full bg-black/20 border-b border-white/10 px-4 py-3 text-white font-body-md placeholder:text-on-surface-variant/40 transition-all duration-300 focus:bg-white/5 focus:border-primary focus:outline-none rounded-t-lg" 
-                placeholder="name@institution.com" 
+                placeholder="elias@example.com" 
                 type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
                 required
               />
             </div>
@@ -76,18 +102,31 @@ const SignIn = () => {
             </div>
             <div className="relative">
               <input 
-                className="w-full bg-black/20 border-b border-white/10 px-4 py-3 text-white font-body-md placeholder:text-on-surface-variant/40 transition-all duration-300 focus:bg-white/5 focus:border-primary focus:outline-none rounded-t-lg" 
+                className="w-full bg-black/20 border-b border-white/10 px-4 py-3 text-white font-body-md placeholder:text-on-surface-variant/40 transition-all duration-300 focus:bg-white/5 focus:border-primary focus:outline-none rounded-t-lg pr-12" 
                 placeholder="••••••••••••" 
-                type="password"
+                type={showPassword ? "text" : "password"}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
                 required
               />
+              <button 
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-on-surface-variant/50 hover:text-primary transition-colors" 
+                type="button" 
+                onClick={() => setShowPassword(!showPassword)}
+              >
+                <span className="material-symbols-outlined">{showPassword ? 'visibility_off' : 'visibility'}</span>
+              </button>
             </div>
           </div>
 
           {/* Primary Action */}
-          <button className="w-full py-4 px-6 bg-primary text-on-primary font-title-md rounded-xl violet-glow hover:opacity-90 active:scale-95 transition-all duration-200 mt-4 flex items-center justify-center gap-2" type="submit">
-            <span>Sign In</span>
-            <span className="material-symbols-outlined text-xl">arrow_forward</span>
+          <button 
+            className={`w-full py-4 px-6 font-title-md rounded-xl transition-all duration-200 mt-4 flex items-center justify-center gap-2 ${isLoading ? 'bg-primary/50 text-white/50 cursor-not-allowed' : 'bg-primary text-on-primary violet-glow hover:opacity-90 active:scale-95'}`} 
+            type="submit"
+            disabled={isLoading}
+          >
+            <span>{isLoading ? 'Signing In...' : 'Sign In'}</span>
+            {!isLoading && <span className="material-symbols-outlined text-xl">arrow_forward</span>}
           </button>
         </form>
 

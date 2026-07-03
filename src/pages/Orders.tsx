@@ -1,6 +1,7 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import BottomNav from '../components/BottomNav';
+import { supabase } from '../lib/supabase';
 import './Orders.css';
 
 interface Deal {
@@ -8,77 +9,56 @@ interface Deal {
   title: string;
   sellerHandle: string;
   price: number;
-  status: 'In Transit' | 'Locked' | 'Completed' | 'Disputed';
+  status: string;
   date: string; // e.g. "2026-10"
+  imageUrl?: string;
   avatarUrl?: string;
   iconName?: string;
 }
 
-const mockDeals: Deal[] = [
-  {
-    id: '1',
-    title: 'Vintage Leica M6',
-    sellerHandle: '@elias_vault',
-    price: 3250.00,
-    status: 'In Transit',
-    date: 'October 2026',
-    avatarUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuD1JK1lwtodCLh6c7pWTTmC5WSNAWfIiQV-bSoIYA-8K2osfht5fbTZCTFhJpzQdI0PQBTDaCSLJihL-pCLkd8JlHP22n8-Dblfwlk5Kbjr_0LdK-6EfWrGhjs0fzrV1186zPAqhBiXNqaYMX9RyZQIlr27xNFyXE_ZiqblFPA_aGX1gXoQkhM8BuuY_t-2uFQRjU6NpUf2CA5inky0-oC3ekUoeNdZKnLWKxmbc7dH5Z5eap0_Ws9XRqOg1X1_gBB7y2fqnJ8SZi2b'
-  },
-  {
-    id: '2',
-    title: 'Custom PC Build',
-    sellerHandle: '@nebula_systems',
-    price: 12400.00,
-    status: 'Locked',
-    date: 'October 2026',
-    iconName: 'storefront'
-  },
-  {
-    id: '3',
-    title: 'MacBook Pro M4',
-    sellerHandle: '@sarah_digital',
-    price: 2499.00,
-    status: 'Completed',
-    date: 'September 2026',
-    avatarUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuAcewq5YrKca_0jV8LLY6Q-d3sDW0Lug-GzZc9pv9ZaWOnDhRkFKFHccIESwKiU2w9io6S5KbasHgc71lIGpqtT-OI49uNz6jK86DkO4zrMNzRoVUWU6v7ft0gxlC4-ND_Mhcca9gwARg5i6G-_7rDyJW19yC74sYXRDnRY1qtvja0baSL-fS3z2kSY49lMcEB84omFN-GxG5XFl6GCKEV7dAJC3Btx5PHG5RXf9Dte3tAZvveg6mX_jA2iCAwbqXRvwu4KBhTAV7WR'
-  },
-  {
-    id: '4',
-    title: 'Rare Chronograph',
-    sellerHandle: '@watch_collector',
-    price: 8750.00,
-    status: 'Disputed',
-    date: 'September 2026',
-    avatarUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBnFVPX5u6qbj1ZPW4oyj1b7URi4Y-ZftuAg8VSV8eo2COefPvmW89w698dVCGslrSSNScdoWp-f48pTEDS2ZFOsilU5hYatFTIZAbTMBFY8hUoIUX51cGrU3DTY86OjasfkaeJcmRgH5BN1wV4twxJryX5YyW9o5wysNWRXmTgnK38P6AaTdFS1aCffPpJrsWPDIIrOH45wwPK1kfbQbW909vclcbv1cDSb9UCEepaJUchwFuDXKhXuS591nwxCov8zNdt0d0tC2IX'
-  }
-];
-
-const getStatusStyle = (status: Deal['status']) => {
+const getStatusStyle = (status: string) => {
   switch (status) {
-    case 'In Transit':
+    case 'IN_TRANSIT':
+    case 'DELIVERED_PENDING_RELEASE':
       return 'bg-secondary-container/20 text-[#c3c0ff] border-secondary-container/30';
-    case 'Locked':
+    case 'ESCROW_LOCKED':
+    case 'LOCKED':
       return 'bg-primary/20 text-primary border-primary/30';
-    case 'Completed':
+    case 'COMPLETED':
+    case 'SETTLED':
       return 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30';
-    case 'Disputed':
+    case 'DISPUTED':
       return 'bg-error-container/20 text-[#ffb4ab] border-error-container/30';
+    default:
+      return 'bg-white/10 text-white/50 border-white/20';
   }
+};
+
+const getDisplayStatus = (status: string) => {
+  if (status === 'IN_TRANSIT') return 'In Transit';
+  if (status === 'ESCROW_LOCKED' || status === 'LOCKED') return 'Locked';
+  if (status === 'COMPLETED' || status === 'SETTLED') return 'Completed';
+  if (status === 'DISPUTED') return 'Disputed';
+  if (status === 'DELIVERED_PENDING_RELEASE') return 'Pending Release';
+  if (status === 'PENDING_PAYMENT') return 'Pending Payment';
+  return status;
 };
 
 const DealCard = ({ deal }: { deal: Deal }) => {
   const navigate = useNavigate();
   return (
     <div 
-      onClick={() => navigate(`/orders/${deal.id}/lock`)} 
+      onClick={() => navigate(`/orders/${deal.id}`)} 
       className="aether-glass-orders rounded-2xl p-5 flex items-center justify-between active:scale-[0.98] transition-all cursor-pointer"
     >
       <div className="flex items-center gap-4">
-        <div className={`w-12 h-12 rounded-full overflow-hidden border border-white/10 bg-white/5 flex items-center justify-center ${deal.avatarUrl ? 'ring-1 ring-primary/20 animate-pulse bg-white/10' : ''}`}>
-          {deal.avatarUrl ? (
+        <div className={`w-12 h-12 rounded-full overflow-hidden border border-white/10 bg-white/5 flex items-center justify-center ${deal.imageUrl || deal.avatarUrl ? 'ring-1 ring-primary/20 bg-white/10' : ''}`}>
+          {deal.imageUrl ? (
+            <img loading="lazy" className="w-full h-full object-cover" alt="Product" src={deal.imageUrl} />
+          ) : deal.avatarUrl ? (
             <img loading="lazy" className="w-full h-full object-cover" alt="Avatar" src={deal.avatarUrl} />
           ) : (
-            <span className="material-symbols-outlined text-primary/70">{deal.iconName}</span>
+            <span className="material-symbols-outlined text-primary/70">{deal.iconName || 'shopping_bag'}</span>
           )}
         </div>
         <div>
@@ -87,11 +67,11 @@ const DealCard = ({ deal }: { deal: Deal }) => {
         </div>
       </div>
       <div className="text-right flex flex-col items-end">
-        <p className={`font-title-md font-semibold ${deal.status === 'Disputed' ? 'text-[#ffb4ab]' : 'text-white'}`}>
-          ${deal.price.toLocaleString(undefined, {minimumFractionDigits: 2})}
+        <p className={`font-title-md font-semibold ${deal.status === 'DISPUTED' ? 'text-[#ffb4ab]' : 'text-white'}`}>
+          ₦{deal.price.toLocaleString(undefined, {minimumFractionDigits: 2})}
         </p>
         <span className={`inline-flex items-center px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest mt-1.5 border ${getStatusStyle(deal.status)}`}>
-          {deal.status}
+          {getDisplayStatus(deal.status)}
         </span>
       </div>
     </div>
@@ -101,13 +81,78 @@ const DealCard = ({ deal }: { deal: Deal }) => {
 const Orders = () => {
   const navigate = useNavigate();
   const [activeFilter, setActiveFilter] = useState('All');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [deals, setDeals] = useState<Deal[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   const filters = ['All', 'Locked', 'In Transit', 'Completed', 'Disputed'];
 
+  useEffect(() => {
+    const fetchOrders = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        navigate('/signin');
+        return;
+      }
+
+      const { data: ordersData } = await supabase
+        .from('orders')
+        .select(`
+          *,
+          vendor:users!orders_vendor_id_fkey(full_name),
+          buyer:users!orders_buyer_id_fkey(full_name)
+        `)
+        .or(`vendor_id.eq.${user.id},buyer_id.eq.${user.id}`)
+        .order('created_at', { ascending: false });
+
+      if (ordersData) {
+        const mappedDeals = ordersData.map((o: any) => {
+          const isVendor = o.vendor_id === user.id;
+          const otherPartyName = isVendor ? (o.buyer?.full_name || 'Buyer') : (o.vendor?.full_name || 'Vendor');
+          const dateObj = new Date(o.created_at);
+          const monthYear = dateObj.toLocaleString('en-US', { month: 'long', year: 'numeric' });
+
+          return {
+            id: o.id,
+            title: o.item_name,
+            sellerHandle: `@${otherPartyName.replace(/\s+/g, '_').toLowerCase()}`,
+            price: Number(o.amount),
+            status: o.status,
+            date: monthYear,
+            imageUrl: o.item_image_url
+          };
+        });
+        setDeals(mappedDeals);
+      }
+      setIsLoading(false);
+    };
+
+    fetchOrders();
+  }, [navigate]);
+
   const filteredDeals = useMemo(() => {
-    if (activeFilter === 'All') return mockDeals;
-    return mockDeals.filter(deal => deal.status === activeFilter);
-  }, [activeFilter]);
+    let result = deals;
+    
+    if (activeFilter !== 'All') {
+      const targetStatus = activeFilter.toUpperCase().replace(' ', '_');
+      result = result.filter(deal => {
+        if (activeFilter === 'Locked') return deal.status === 'ESCROW_LOCKED' || deal.status === 'LOCKED';
+        if (activeFilter === 'Completed') return deal.status === 'COMPLETED' || deal.status === 'SETTLED';
+        if (activeFilter === 'In Transit') return deal.status === 'IN_TRANSIT' || deal.status === 'DELIVERED_PENDING_RELEASE';
+        return deal.status === targetStatus;
+      });
+    }
+
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      result = result.filter(deal => 
+        deal.title.toLowerCase().includes(q) || 
+        deal.sellerHandle.toLowerCase().includes(q)
+      );
+    }
+
+    return result;
+  }, [deals, activeFilter, searchQuery]);
 
   const groupedDeals = useMemo(() => {
     return filteredDeals.reduce((acc, deal) => {
@@ -135,14 +180,13 @@ const Orders = () => {
             </button>
             <h1 className="font-headline-md text-2xl font-bold text-white tracking-tight">Your Deals</h1>
           </div>
-          {/* Search Icon Removed per request */}
         </div>
       </header>
 
       <main className="pt-24 px-5 max-w-[600px] mx-auto min-h-screen">
         
         {/* Search & Filters */}
-        <section className="space-y-6 mb-8">
+        <section className="space-y-6 mb-8 relative z-10">
           <div className="relative group">
             <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none">
               <span className="material-symbols-outlined text-white/30">search</span>
@@ -151,6 +195,8 @@ const Orders = () => {
               className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 pl-12 pr-4 focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary/50 transition-all backdrop-blur-md font-body-md text-white placeholder:text-white/20" 
               placeholder="Search deals, usernames..." 
               type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
           <div className="flex items-center gap-3 overflow-x-auto pb-2 no-scrollbar">
@@ -171,10 +217,14 @@ const Orders = () => {
         </section>
 
         {/* Deal List */}
-        <div className="space-y-10">
-          {Object.keys(groupedDeals).length === 0 ? (
+        <div className="space-y-10 relative z-10">
+          {isLoading ? (
+            <div className="flex justify-center pt-10">
+              <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+            </div>
+          ) : Object.keys(groupedDeals).length === 0 ? (
             <div className="text-center text-white/40 pt-10">
-              No deals found for this filter.
+              No deals found.
             </div>
           ) : (
             Object.entries(groupedDeals).map(([date, deals]) => (

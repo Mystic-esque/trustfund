@@ -12,8 +12,23 @@ const LockFundsParser = () => {
     if (!link.trim()) return;
     setIsParsing(true);
     setTimeout(() => {
-      navigate('/o/demo-order-123');
-    }, 1500);
+      let slug = link.trim();
+      
+      // If it's a full URL, extract the part after /o/
+      if (slug.includes('/o/')) {
+        const parts = slug.split('/o/');
+        slug = parts[parts.length - 1];
+      }
+      
+      // Clean up the slug (remove trailing slashes or query parameters)
+      slug = slug.split('/')[0].split('?')[0];
+
+      if (slug) {
+        navigate(`/o/${slug}`);
+      } else {
+        setIsParsing(false);
+      }
+    }, 800);
   };
 
   const handlePaste = async () => {

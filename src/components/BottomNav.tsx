@@ -5,7 +5,7 @@ const BottomNav = () => {
   const currentPath = location.pathname;
 
   return (
-    <div className="md:hidden fixed bottom-6 left-1/2 -translate-x-1/2 w-[90%] max-w-[400px] z-50">
+    <div className="fixed bottom-6 left-1/2 -translate-x-1/2 w-[90%] max-w-[400px] z-50">
       <nav className="bg-[#101415]/85 backdrop-blur-2xl border border-white/10 rounded-full h-16 flex items-center justify-around px-2 shadow-2xl overflow-visible">
         
         {/* Home */}

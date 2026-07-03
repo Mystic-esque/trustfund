@@ -1,5 +1,7 @@
+import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import BottomNav from '../components/BottomNav';
+import { supabase } from '../lib/supabase';
 import './PublicOrderSummary.css';
 
 interface OrderDetails {
@@ -17,26 +19,86 @@ interface OrderDetails {
   price: number;
 }
 
-// Temporary mock data. Later, this will be fetched from the backend using the order ID from URL params.
-const getMockOrder = (id?: string): OrderDetails => ({
-  id: id || 'demo-order-123',
-  productImage: 'https://lh3.googleusercontent.com/aida-public/AB6AXuAvGuQbympCFr2CNBpFf-DGzZRn_RTfqijPUnnF_YyDXj7ZrPGX-knXECKiHdihY7rG6GOmASUzwK1PeSp1Vkn5AQn_w7KtF8uoAD43Rd_MYBDYP5659nI7nGZ0XUr2ixm_Tdt1R_OWStGPllomBjLTcN9pAvxFV9bzmbCUB4Lf_PPvd8Hd8jns70K_Sx_LeKK11pCbHtv6EzNdO-if5ydyE1urtNDH69KyujDu5LoRLVSUB_k5gJUvvmUx6qXdAT75oC6Psf_s7UT_',
-  category: 'Premium Asset',
-  title: 'Vintage 90s Nike Jacket',
-  sellerAvatar: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDtJwP6FIF9_sidy4-z7N7l5ziKtjq2oNPileWC--EV_y4zTaXJOVM8rjOTGQ-u__anNESwekiSQSD2T70u9w24fIIyF4mDjBb-oMWyyk-az1jI9cvjbMNLeboVny6JdURiO93J2Z6q201oKZ-s8jBqQcWkbUfHHX5DLf-XXhar36-AJGEu_wBVp1DCoGr6TFh0FqGCyFI-Dke06NNEk14FXrkZLRBf7zrcyav5WOZbHoWt_V_BbCl_RzyAI8U75SgmDgxJHXDqjgpk',
-  sellerUsername: 'vintage_steve',
-  sellerName: 'Steve Vintage Co.',
-  memberSince: 'Oct 2022',
-  trustRating: 4.9,
-  escrowDeals: 124,
-  disputes: 0,
-  price: 150000,
-});
-
 const PublicOrderSummary = () => {
   const navigate = useNavigate();
   const { slug } = useParams(); // Get order ID/slug from URL if available
-  const order = getMockOrder(slug);
+  const [order, setOrder] = useState<OrderDetails | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchOrder = async () => {
+      try {
+        if (!slug) throw new Error("Invalid deal link.");
+
+        // We can fetch by link_slug or id depending on how the URL is structured.
+        // Assuming slug is the link_slug:
+        const { data: orderData, error: orderError } = await supabase
+          .from('orders')
+          .select('*, vendor:users!vendor_id(*)')
+          .eq('link_slug', slug)
+          .single();
+
+        // If it fails by link_slug, let's try by id in case the URL uses ID:
+        let finalOrderData = orderData;
+        if (orderError) {
+          const { data: orderById, error: idError } = await supabase
+            .from('orders')
+            .select('*, vendor:users!vendor_id(*)')
+            .eq('id', slug)
+            .single();
+          
+          if (idError) throw new Error("Deal not found.");
+          finalOrderData = orderById;
+        }
+
+        const vendor = finalOrderData.vendor;
+        const joinedDate = new Date(vendor.created_at);
+        const monthYear = joinedDate.toLocaleString('default', { month: 'short' }) + ' ' + joinedDate.getFullYear();
+
+        setOrder({
+          id: finalOrderData.id,
+          productImage: finalOrderData.item_image_url || 'https://lh3.googleusercontent.com/aida-public/AB6AXuAvGuQbympCFr2CNBpFf-DGzZRn_RTfqijPUnnF_YyDXj7ZrPGX-knXECKiHdihY7rG6GOmASUzwK1PeSp1Vkn5AQn_w7KtF8uoAD43Rd_MYBDYP5659nI7nGZ0XUr2ixm_Tdt1R_OWStGPllomBjLTcN9pAvxFV9bzmbCUB4Lf_PPvd8Hd8jns70K_Sx_LeKK11pCbHtv6EzNdO-if5ydyE1urtNDH69KyujDu5LoRLVSUB_k5gJUvvmUx6qXdAT75oC6Psf_s7UT_',
+          category: 'Escrow Deal',
+          title: finalOrderData.item_name,
+          sellerAvatar: vendor.avatar_url || 'https://lh3.googleusercontent.com/aida-public/AB6AXuDtJwP6FIF9_sidy4-z7N7l5ziKtjq2oNPileWC--EV_y4zTaXJOVM8rjOTGQ-u__anNESwekiSQSD2T70u9w24fIIyF4mDjBb-oMWyyk-az1jI9cvjbMNLeboVny6JdURiO93J2Z6q201oKZ-s8jBqQcWkbUfHHX5DLf-XXhar36-AJGEu_wBVp1DCoGr6TFh0FqGCyFI-Dke06NNEk14FXrkZLRBf7zrcyav5WOZbHoWt_V_BbCl_RzyAI8U75SgmDgxJHXDqjgpk',
+          sellerUsername: vendor.username || vendor.full_name.split(' ').join('_').toLowerCase(),
+          sellerName: vendor.full_name,
+          memberSince: monthYear,
+          trustRating: 4.9, // mock
+          escrowDeals: vendor.completed_deals_count || 0,
+          disputes: 0, // mock
+          price: finalOrderData.amount,
+        });
+
+      } catch (err: any) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchOrder();
+  }, [slug]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center text-white" style={{ background: '#101415' }}>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
+  if (error || !order) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center text-white space-y-4" style={{ background: '#101415' }}>
+        <span className="material-symbols-outlined text-6xl text-white/50">error</span>
+        <h1 className="text-2xl font-bold">Deal Not Found</h1>
+        <p className="text-white/60">{error}</p>
+        <button onClick={() => navigate('/')} className="px-6 py-2 bg-white/10 rounded-full hover:bg-white/20 transition-colors">Go Home</button>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen text-[#e0e3e5] font-['Hanken_Grotesk'] overflow-x-hidden" style={{ background: 'radial-gradient(circle at 20% 30%, rgba(221, 183, 255, 0.15) 0%, transparent 50%), radial-gradient(circle at 80% 70%, rgba(62, 60, 143, 0.2) 0%, transparent 50%), #101415' }}>

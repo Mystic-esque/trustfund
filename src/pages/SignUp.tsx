@@ -1,11 +1,18 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
+import { supabase } from '../lib/supabase';
 import './Auth.css';
 
 const SignUp = () => {
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
   const [termsAccepted, setTermsAccepted] = useState(false);
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
+  const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -19,13 +26,53 @@ const SignUp = () => {
     return () => window.removeEventListener('mousemove', handleMouseMove);
   }, []);
 
-  const handleSignUp = (e: React.FormEvent) => {
+  const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!termsAccepted) return;
-    toast.success('Wallet created successfully! Redirecting...');
-    setTimeout(() => {
-      navigate('/home');
-    }, 1500);
+    if (!termsAccepted || isLoading) return;
+    setIsLoading(true);
+
+    try {
+      // 1. Create auth user using Email instead of Phone
+      // We pass name and phone in options.data so the Postgres Trigger can read them
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email: email,
+        password: password,
+        options: {
+          data: {
+            full_name: name,
+            phone: phone,
+          }
+        }
+      });
+
+      if (authError) throw authError;
+
+      const userId = authData.user?.id;
+      if (!userId) throw new Error("No user ID returned");
+
+      // 2. Insert into public.users is now handled by a secure Postgres Trigger automatically!
+      
+      // 3. Provision virtual account
+      const res = await supabase.functions.invoke('provision-virtual-account', {
+        body: { userId, userFullName: name }
+      });
+
+      if (res.error) {
+        console.error("Virtual account provisioning error:", res.error);
+        toast.error("Account created but virtual account provisioning failed. Please retry later.");
+      } else {
+        toast.success('Wallet created successfully! Redirecting...');
+      }
+
+      setTimeout(() => {
+        navigate('/home');
+      }, 1500);
+
+    } catch (err: any) {
+      toast.error(err.message || 'An error occurred during signup');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -71,6 +118,8 @@ const SignUp = () => {
                   id="name" 
                   placeholder="Elias Vance" 
                   type="text"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
                   required
                 />
               </div>
@@ -81,24 +130,45 @@ const SignUp = () => {
                 <input 
                   className="w-full h-14 px-4 rounded-xl input-glass font-body-md text-on-surface placeholder:text-on-surface-variant/30" 
                   id="email" 
-                  placeholder="vance@aetheric.io" 
+                  placeholder="elias@example.com" 
                   type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                />
+              </div>
+
+              {/* Phone Number */}
+              <div className="group">
+                <label className="block font-label-sm text-on-surface-variant group-focus-within:text-primary transition-colors mb-2 ml-1" htmlFor="phone">Phone Number</label>
+                <input 
+                  className="w-full h-14 px-4 rounded-xl input-glass font-body-md text-on-surface placeholder:text-on-surface-variant/30" 
+                  id="phone" 
+                  placeholder="+2348000000000" 
+                  type="tel"
+                  pattern="^\+234\d{10}$"
+                  title="Phone number must start with +234 followed by 10 digits"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
                   required
                 />
               </div>
 
               {/* Password */}
               <div className="group relative">
-                <label className="block font-label-sm text-on-surface-variant group-focus-within:text-primary transition-colors mb-2 ml-1" htmlFor="password">Security Phrase</label>
+                <label className="block font-label-sm text-on-surface-variant group-focus-within:text-primary transition-colors mb-2 ml-1" htmlFor="password">Password</label>
                 <input 
-                  className="w-full h-14 px-4 rounded-xl input-glass font-body-md text-on-surface placeholder:text-on-surface-variant/30" 
+                  className="w-full h-14 px-4 rounded-xl input-glass font-body-md text-on-surface placeholder:text-on-surface-variant/30 pr-12" 
                   id="password" 
                   placeholder="••••••••••••" 
-                  type="password"
+                  type={showPassword ? "text" : "password"}
+                  minLength={8}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
                   required
                 />
-                <button className="absolute right-4 top-[42px] text-on-surface-variant/50 hover:text-primary transition-colors" type="button" onClick={() => toast('Security visibility toggled', { icon: '👁️' })}>
-                  <span className="material-symbols-outlined">visibility</span>
+                <button className="absolute right-4 top-[42px] text-on-surface-variant/50 hover:text-primary transition-colors" type="button" onClick={() => setShowPassword(!showPassword)}>
+                  <span className="material-symbols-outlined">{showPassword ? 'visibility_off' : 'visibility'}</span>
                 </button>
               </div>
             </div>
@@ -121,12 +191,12 @@ const SignUp = () => {
 
             {/* Primary Action */}
             <button 
-              className={`w-full h-14 rounded-full font-title-md flex items-center justify-center gap-2 transition-all ${termsAccepted ? 'primary-glow-btn text-on-primary hover:opacity-90 active:scale-95 group' : 'bg-surface-container-highest text-on-surface-variant/50 cursor-not-allowed opacity-70'}`} 
+              className={`w-full h-14 rounded-full font-title-md flex items-center justify-center gap-2 transition-all ${(termsAccepted && !isLoading) ? 'primary-glow-btn text-on-primary hover:opacity-90 active:scale-95 group' : 'bg-surface-container-highest text-on-surface-variant/50 cursor-not-allowed opacity-70'}`} 
               type="submit"
-              disabled={!termsAccepted}
+              disabled={!termsAccepted || isLoading}
             >
-              Create My Wallet
-              <span className={`material-symbols-outlined transition-transform ${termsAccepted ? 'group-hover:translate-x-1' : ''}`}>arrow_forward</span>
+              {isLoading ? 'Creating Wallet...' : 'Create My Wallet'}
+              {!isLoading && <span className={`material-symbols-outlined transition-transform ${termsAccepted ? 'group-hover:translate-x-1' : ''}`}>arrow_forward</span>}
             </button>
           </form>
 
