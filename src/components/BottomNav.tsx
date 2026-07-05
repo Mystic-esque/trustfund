@@ -26,8 +26,8 @@ const BottomNav = () => {
         </Link>
 
         {/* Chat */}
-        <Link to="/orders" className="flex flex-col items-center justify-center text-white/60 hover:text-white px-3 transition-transform active:scale-90">
-          <span className="material-symbols-outlined">chat_bubble</span>
+        <Link to="/messages" className={`flex flex-col items-center justify-center px-3 transition-transform active:scale-90 ${currentPath === '/messages' ? 'text-primary' : 'text-white/60 hover:text-white'}`}>
+          <span className="material-symbols-outlined" style={{ fontVariationSettings: currentPath === '/messages' ? "'FILL' 1" : "'FILL' 0" }}>chat_bubble</span>
           <span className="font-label-sm text-[10px] mt-0.5">Chat</span>
         </Link>
 

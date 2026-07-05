@@ -66,16 +66,72 @@ serve(async (req) => {
 
     const { data: vendor, error: vendorErr } = await supabase
       .from("users")
-      .select("bank_account_number, bank_account_name, bank_code, pending_balance, completed_deals_count")
+      .select("bank_account_number, bank_account_name, bank_code, pending_balance, available_balance, completed_deals_count, auto_payout_enabled")
       .eq("id", order.vendor_id)
       .single();
 
-    if (vendorErr || !vendor || !vendor.bank_account_number || !vendor.bank_code) {
-      return new Response(JSON.stringify({ error: "Vendor bank details missing" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    if (vendorErr || !vendor) {
+      return new Response(JSON.stringify({ error: "Vendor missing" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     const platform_fee = Number(order.amount) * 0.015;
     const net_payout = Number(order.amount) - platform_fee;
+
+    // Check if we should do auto-payout
+    const shouldAutoPayout = vendor.auto_payout_enabled !== false && vendor.bank_account_number && vendor.bank_code;
+
+    if (!shouldAutoPayout) {
+      // INTERNAL SETTLEMENT (Credit internal available_balance)
+      const { data: buyer } = await supabase
+        .from("users")
+        .select("id, escrow_balance, completed_deals_count")
+        .eq("id", order.buyer_id)
+        .single();
+
+      if (buyer) {
+        await supabase.from("users").update({
+          escrow_balance: Number(buyer.escrow_balance) - Number(order.amount),
+          completed_deals_count: Number(buyer.completed_deals_count) + 1,
+        }).eq("id", buyer.id);
+      }
+
+      await supabase.from("users").update({
+        pending_balance: Number(vendor.pending_balance) - net_payout,
+        available_balance: Number(vendor.available_balance || 0) + net_payout,
+        completed_deals_count: Number(vendor.completed_deals_count) + 1,
+      }).eq("id", order.vendor_id);
+
+      await supabase.from("orders").update({
+        status: "SETTLED",
+        settled_at: new Date().toISOString(),
+        platform_fee,
+        net_payout
+      }).eq("id", orderId);
+
+      await supabase.from("ledger_entries").insert([
+        {
+          user_id: order.vendor_id,
+          order_id: orderId,
+          entry_type: "SETTLEMENT_INTERNAL",
+          amount: net_payout,
+          balance_effect: "available",
+          direction: "credit",
+          narration: `Internal settlement for ${order.item_name}`
+        },
+        {
+          user_id: order.buyer_id,
+          order_id: orderId,
+          entry_type: "ESCROW_UNLOCK",
+          amount: Number(order.amount),
+          balance_effect: "escrow",
+          direction: "debit",
+          narration: `Funds released for ${order.item_name}`
+        }
+      ]);
+
+      return new Response(JSON.stringify({ success: true, method: 'internal', message: "Settled internally" }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
     const merchantTxRef = `TF-SETTLE-${orderId}-${Date.now()}`;
 
     // Update order state to SETTLING to prevent double disbursement

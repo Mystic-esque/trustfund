@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import * as bcrypt from "npm:bcryptjs";
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -11,9 +12,9 @@ serve(async (req) => {
   }
 
   try {
-    const { orderId, buyerId } = await req.json();
+    const { orderId, buyerId, pin } = await req.json();
 
-    if (!orderId || !buyerId) {
+    if (!orderId || !buyerId || !pin) {
       return new Response(JSON.stringify({ error: "Missing required fields" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -63,12 +64,22 @@ serve(async (req) => {
     // 3. Fetch buyer balance
     const { data: buyer, error: buyerErr } = await supabase
       .from("users")
-      .select("available_balance, escrow_balance")
+      .select("available_balance, escrow_balance, payment_pin")
       .eq("id", buyerId)
       .single();
 
     if (buyerErr || !buyer) {
       return new Response(JSON.stringify({ error: "Buyer not found" }), { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
+    // Verify PIN
+    if (!buyer.payment_pin) {
+      return new Response(JSON.stringify({ error: "pin_not_set" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
+    const isValid = await bcrypt.compare(pin, buyer.payment_pin);
+    if (!isValid) {
+      return new Response(JSON.stringify({ error: "incorrect_pin" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     if (Number(buyer.available_balance) < Number(order.amount)) {

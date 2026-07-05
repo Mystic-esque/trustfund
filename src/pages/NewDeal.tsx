@@ -3,10 +3,13 @@ import { useNavigate, Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import BottomNav from '../components/BottomNav';
 import { supabase } from '../lib/supabase';
+import { useNotifications } from '../hooks/useNotifications';
+
 import './NewDeal.css';
 
 const NewDeal = () => {
   const navigate = useNavigate();
+  const { unreadCount } = useNotifications();
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [amount, setAmount] = useState('');
@@ -124,7 +127,12 @@ const NewDeal = () => {
             <h1 className="text-xl font-bold text-primary">Create New Deal</h1>
           </div>
           <div className="flex items-center gap-4">
-            <span className="material-symbols-outlined text-on-surface-variant hover:text-white cursor-pointer">notifications</span>
+            <button onClick={() => navigate('/notifications')} className="relative transition-all">
+              <span className="material-symbols-outlined text-on-surface-variant hover:text-white cursor-pointer">notifications</span>
+              {unreadCount > 0 && (
+                <span className="absolute top-0 right-0 w-2 h-2 bg-error rounded-full shadow-[0_0_8px_rgba(255,180,171,0.8)]"></span>
+              )}
+            </button>
             <div className="w-9 h-9 rounded-full overflow-hidden border border-white/10">
               <img alt="Profile" className="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBWTCzjewBwrD5OS7QH0F7ppv_iP0n70vu1vaEnj13NzIrlCX-rk4GsiGqccsdVLJBf9dNWp3Mhp5rbWwhbIrm1YojpfVzbJvxt-WT45iczx-TOBNHcKA_O3zxy1oOH5PjG_I0t-ic7rrMOcY_mG6wsbVDLaiqiHF9hN0Wa3JNyJs6n27Q3FzpU6lJa_aK-RsAa_Bep6YG8UTdMVnGCQz_D28Bg085YEp2lvYPGL2-VC21ffed9NBRIcU0OB7yFZ_RltL7jkt30Hpsx"/>
             </div>

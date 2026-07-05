@@ -2,12 +2,14 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import BottomNav from '../components/BottomNav';
 import { supabase } from '../lib/supabase';
+import { useNotifications } from '../hooks/useNotifications';
 import './Profile.css';
 
 const Profile = () => {
   const navigate = useNavigate();
   const [userData, setUserData] = useState<any>(null);
   const [activeEscrows, setActiveEscrows] = useState<number>(0);
+  const { unreadCount } = useNotifications();
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -55,9 +57,11 @@ const Profile = () => {
           </div>
           <h1 className="font-headline-md text-xl tracking-tight text-primary font-bold">Profile</h1>
           <div className="w-10 h-10 flex items-center justify-end">
-            <button className="relative hover:bg-surface-bright/10 p-1 rounded-full transition-all">
+            <button onClick={() => navigate('/notifications')} className="relative hover:bg-surface-bright/10 p-1 rounded-full transition-all">
               <span className="material-symbols-outlined text-primary">notifications</span>
-              <span className="absolute top-1 right-1 w-2 h-2 bg-error rounded-full"></span>
+              {unreadCount > 0 && (
+                <span className="absolute top-1 right-1 w-2 h-2 bg-error rounded-full shadow-[0_0_8px_rgba(255,180,171,0.8)]"></span>
+              )}
             </button>
           </div>
         </div>
@@ -136,7 +140,7 @@ const Profile = () => {
             </div>
 
             {/* Transaction History (Added per user request) */}
-            <Link to="/wallet" className="flex items-center justify-between p-4 hover:bg-surface-bright/5 transition-colors cursor-pointer group">
+            <Link to="/transactions" className="flex items-center justify-between p-4 hover:bg-surface-bright/5 transition-colors cursor-pointer group">
               <div className="flex items-center gap-4">
                 <div className="w-10 h-10 rounded-xl bg-surface-container-high flex items-center justify-center text-primary">
                   <span className="material-symbols-outlined">history</span>
@@ -163,10 +167,10 @@ const Profile = () => {
                 </div>
                 <span className="material-symbols-outlined text-on-surface-variant/40">chevron_right</span>
               </div>
-              <button className="w-full py-3 rounded-xl border border-dashed border-outline-variant/30 flex items-center justify-center gap-2 text-on-surface-variant/60 hover:text-primary hover:border-primary/40 hover:bg-primary/5 transition-all">
+              <Link to="/bank-setup" className="w-full py-3 rounded-xl border border-dashed border-outline-variant/30 flex items-center justify-center gap-2 text-on-surface-variant/60 hover:text-primary hover:border-primary/40 hover:bg-primary/5 transition-all">
                 <span className="material-symbols-outlined text-sm">add_circle</span>
                 <span className="font-label-lg font-bold text-sm">ADD BANK ACCOUNT</span>
-              </button>
+              </Link>
             </div>
           </div>
         </section>
@@ -207,16 +211,16 @@ const Profile = () => {
         <section className="space-y-3">
           <h3 className="font-label-lg font-bold text-on-surface-variant/60 px-1 uppercase tracking-widest text-[11px]">Account Settings</h3>
           <div className="glass-panel-profile rounded-2xl overflow-hidden divide-y divide-outline-variant/5">
-            <div className="flex items-center justify-between p-4 hover:bg-surface-bright/5 cursor-pointer group">
+            <Link to="/payment-settings" className="flex items-center justify-between p-4 hover:bg-surface-bright/5 cursor-pointer group">
               <div className="flex items-center gap-4">
                 <div className="w-10 h-10 rounded-xl bg-surface-container-high flex items-center justify-center text-on-surface-variant/60">
-                  <span className="material-symbols-outlined">fingerprint</span>
+                  <span className="material-symbols-outlined">payments</span>
                 </div>
-                <p className="font-body-md font-semibold">Security & Biometrics</p>
+                <p className="font-body-md font-semibold">Payment Settings</p>
               </div>
               <span className="material-symbols-outlined text-on-surface-variant/40 group-hover:translate-x-1 transition-transform">chevron_right</span>
-            </div>
-            <div className="flex items-center justify-between p-4 hover:bg-surface-bright/5 cursor-pointer group">
+            </Link>
+            <Link to="/notifications" className="flex items-center justify-between p-4 hover:bg-surface-bright/5 cursor-pointer group">
               <div className="flex items-center gap-4">
                 <div className="w-10 h-10 rounded-xl bg-surface-container-high flex items-center justify-center text-on-surface-variant/60">
                   <span className="material-symbols-outlined">notifications_active</span>
@@ -224,7 +228,7 @@ const Profile = () => {
                 <p className="font-body-md font-semibold">Notifications</p>
               </div>
               <span className="material-symbols-outlined text-on-surface-variant/40 group-hover:translate-x-1 transition-transform">chevron_right</span>
-            </div>
+            </Link>
             <div className="flex items-center justify-between p-4 hover:bg-surface-bright/5 cursor-pointer group">
               <div className="flex items-center gap-4">
                 <div className="w-10 h-10 rounded-xl bg-surface-container-high flex items-center justify-center text-on-surface-variant/60">

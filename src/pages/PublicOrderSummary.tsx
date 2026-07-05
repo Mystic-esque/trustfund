@@ -204,7 +204,7 @@ const PublicOrderSummary = () => {
         <footer className="pt-8 space-y-8 flex flex-col items-center">
           {currentUserId !== order.vendorId ? (
             <button 
-              onClick={() => navigate(`/orders/${order.id}/lock`)}
+              onClick={() => navigate(currentUserId ? `/orders/${order.id}/lock` : `/orders/${order.id}/auth`)}
               className="w-full md:w-96 py-5 rounded-full bg-gradient-to-r from-[#b76dff] to-[#3e3c8f] text-white font-bold text-[20px] glow-violet hover:opacity-90 active:scale-95 transition-all shadow-[0_0_20px_rgba(183,109,255,0.3)]"
             >
               Secure Deal

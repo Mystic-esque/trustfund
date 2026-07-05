@@ -4,6 +4,7 @@ import Joyride, { STATUS } from 'react-joyride';
 import type { CallBackProps, Step } from 'react-joyride';
 import BottomNav from '../components/BottomNav';
 import { supabase } from '../lib/supabase';
+import { useNotifications } from '../hooks/useNotifications';
 import './Home.css';
 
 const Home = () => {
@@ -14,6 +15,7 @@ const Home = () => {
   const [orders, setOrders] = useState<any[]>([]);
   const navigate = useNavigate();
   const [runTour, setRunTour] = useState(false);
+  const { unreadCount } = useNotifications();
 
   const tourSteps: Step[] = [
     {
@@ -194,8 +196,11 @@ const Home = () => {
             </h1>
           </div>
           <div className="flex items-center gap-3">
-            <button className="text-white/80 hover:text-white transition-opacity p-2 rounded-full hover:bg-white/10">
+            <button onClick={() => navigate('/notifications')} className="relative text-white/80 hover:text-white transition-opacity p-2 rounded-full hover:bg-white/10">
               <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 0" }}>notifications</span>
+              {unreadCount > 0 && (
+                <span className="absolute top-2 right-2 w-2 h-2 bg-error rounded-full shadow-[0_0_8px_rgba(255,180,171,0.8)]"></span>
+              )}
             </button>
           </div>
         </header>
@@ -280,9 +285,9 @@ const Home = () => {
               <span className="font-label-sm text-white/60 group-hover:text-white transition-colors text-xs text-center">Lock</span>
             </Link>
             
-            <Link to="/withdraw" className="flex flex-col items-center gap-3 group">
+            <Link to="/withdraw/amount" className="flex flex-col items-center gap-3 group">
               <div className="w-14 h-14 rounded-2xl glass-button flex items-center justify-center group-hover:bg-white/10 transition-all group-active:scale-90">
-                <span className="material-symbols-outlined text-white">output</span>
+                <span className="material-symbols-outlined text-white">call_made</span>
               </div>
               <span className="font-label-sm text-white/60 group-hover:text-white transition-colors text-xs text-center">Withdraw</span>
             </Link>
