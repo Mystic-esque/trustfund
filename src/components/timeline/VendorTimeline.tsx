@@ -8,7 +8,7 @@ interface VendorTimelineProps {
   currentUser: any;
 }
 
-const VendorTimeline: React.FC<VendorTimelineProps> = ({ order }) => {
+const VendorTimeline: React.FC<VendorTimelineProps> = ({ order, currentUser }) => {
   const navigate = useNavigate();
   const [trackingNumber, setTrackingNumber] = useState(order.tracking_number || '');
   const [courier, setCourier] = useState(order.shipping_courier || '');
