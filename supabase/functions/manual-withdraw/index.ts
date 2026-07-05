@@ -123,6 +123,11 @@ serve(async (req) => {
       })
     });
 
+    if (!transferRes.ok) {
+      const errorText = await transferRes.text();
+      return new Response(JSON.stringify({ error: `Nomba API Error: ${errorText}` }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
     const transferData = await transferRes.json();
     const txStatus = transferData?.data?.status || "PENDING_BILLING";
 
@@ -140,6 +145,7 @@ serve(async (req) => {
           amount: Number(amount),
           balance_effect: "available",
           direction: "debit",
+          nomba_transaction_id: merchantTxRef,
           narration: `Withdrawal to ${vendor.bank_account_number}`
         }
       ]);

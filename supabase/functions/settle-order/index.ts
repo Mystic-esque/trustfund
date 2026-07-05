@@ -132,7 +132,7 @@ serve(async (req) => {
       return new Response(JSON.stringify({ success: true, method: 'internal', message: "Settled internally" }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    const merchantTxRef = `TF-SETTLE-${orderId}-${Date.now()}`;
+    const merchantTxRef = `TF-STL-${orderId.substring(0,8)}-${Date.now()}`;
 
     // Update order state to SETTLING to prevent double disbursement
     await supabase.from("orders").update({
@@ -168,6 +168,13 @@ serve(async (req) => {
         narration: `Payment for ${order.item_name} · ${order.reference_id}`
       })
     });
+
+    if (!transferRes.ok) {
+      // API call failed entirely (e.g. 400 Bad Request)
+      await supabase.from("orders").update({ status: "DELIVERED_PENDING_RELEASE" }).eq("id", orderId);
+      const errorText = await transferRes.text();
+      return new Response(JSON.stringify({ error: `Nomba API Error: ${errorText}` }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
 
     const transferData = await transferRes.json();
     const txStatus = transferData?.data?.status || "PENDING_BILLING";

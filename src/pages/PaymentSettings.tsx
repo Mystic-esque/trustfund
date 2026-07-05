@@ -8,6 +8,9 @@ export default function PaymentSettings() {
   const [userData, setUserData] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isUpdating, setIsUpdating] = useState(false);
+  const [showPinModal, setShowPinModal] = useState(false);
+  const [pin, setPin] = useState(['', '', '', '']);
+  const [isAuthorizing, setIsAuthorizing] = useState(false);
 
   useEffect(() => {
     fetchUserData();
@@ -36,12 +39,32 @@ export default function PaymentSettings() {
     }
   };
 
-  const toggleAutoPayout = async () => {
+  const handleToggleClick = () => {
     if (!userData?.bank_account_number) return;
-    
-    setIsUpdating(true);
-    const newValue = !userData.auto_payout_enabled;
+    if (!userData?.payment_pin) {
+      toast('Please set up your payment PIN first', { icon: '🔒' });
+      navigate('/settings/pin-setup');
+      return;
+    }
+    setShowPinModal(true);
+  };
+
+  const executeToggle = async (finalPin: string) => {
+    setIsAuthorizing(true);
     try {
+      // Verify PIN
+      const res = await supabase.functions.invoke('verify-pin', {
+        body: { pin: finalPin }
+      });
+
+      if (res.error || !res.data?.success) {
+        throw new Error(res.error?.message || res.data?.error || "Incorrect PIN");
+      }
+
+      setShowPinModal(false);
+      setIsUpdating(true);
+      
+      const newValue = !userData.auto_payout_enabled;
       const { error } = await supabase
         .from('users')
         .update({ auto_payout_enabled: newValue })
@@ -50,11 +73,31 @@ export default function PaymentSettings() {
       if (error) throw error;
       setUserData({ ...userData, auto_payout_enabled: newValue });
       toast.success(newValue ? 'Auto-payout enabled' : 'Auto-payout disabled');
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      toast.error('Failed to update preference');
+      toast.error(err.message || 'Failed to update preference');
     } finally {
+      setIsAuthorizing(false);
       setIsUpdating(false);
+    }
+  };
+
+  const handlePinInput = (index: number, value: string) => {
+    if (value.length > 1) return;
+    const newArr = [...pin];
+    newArr[index] = value.replace(/[^0-9]/g, '');
+    setPin(newArr);
+    
+    if (value !== '' && index < 3) {
+      document.getElementById(`pin-${index + 1}`)?.focus();
+    } else if (value !== '' && index === 3) {
+      executeToggle(newArr.join(''));
+    }
+  };
+
+  const handlePinKeyDown = (index: number, e: React.KeyboardEvent) => {
+    if (e.key === 'Backspace' && pin[index] === '' && index > 0) {
+      document.getElementById(`pin-${index - 1}`)?.focus();
     }
   };
 
@@ -104,7 +147,7 @@ export default function PaymentSettings() {
               
               {/* Toggle switch */}
               <button 
-                onClick={toggleAutoPayout}
+                onClick={handleToggleClick}
                 disabled={!hasBank || isUpdating}
                 className={`relative w-12 h-6 rounded-full transition-colors duration-300 shrink-0 mt-1 ${
                   userData?.auto_payout_enabled && hasBank ? 'bg-primary' : 'bg-surface-container-highest border border-white/10'
@@ -154,6 +197,78 @@ export default function PaymentSettings() {
         </section>
 
       </main>
+
+      {/* PIN Authorization Modal */}
+      {showPinModal && (
+        <div className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-md flex items-center justify-center p-5 animate-in fade-in duration-300">
+          <div className="bg-[#1a1a1a] border border-[#d2bbff]/20 rounded-[40px] p-6 md:p-10 text-center shadow-2xl w-full max-w-lg relative overflow-hidden" style={{ boxShadow: '0 4px 40px rgba(168, 85, 247, 0.2)' }}>
+            
+            <button 
+              onClick={() => {
+                setShowPinModal(false);
+                setPin(['', '', '', '']);
+              }}
+              className="absolute top-6 right-6 text-[#958da1] hover:text-white"
+            >
+              <span className="material-symbols-outlined">close</span>
+            </button>
+
+            <div className="relative inline-flex items-center justify-center mb-8 mt-2">
+              <div className="absolute inset-0 bg-primary/20 rounded-full blur-2xl animate-pulse"></div>
+              <div className="relative w-20 h-20 flex items-center justify-center bg-primary/10 border border-primary/30 rounded-full">
+                <span className="material-symbols-outlined text-primary text-4xl" style={{ fontVariationSettings: "'FILL' 1" }}>shield_lock</span>
+              </div>
+            </div>
+            
+            <h2 className="font-headline-lg text-3xl text-white mb-2 tracking-tight">Authorize Action</h2>
+            <p className="font-body-md text-[#ccc3d8] mb-10 max-w-xs mx-auto">
+              Enter your 4-digit security PIN to toggle Auto-Payout.
+            </p>
+
+            <div className="flex justify-center gap-4 mb-10">
+              {pin.map((digit, idx) => (
+                <div key={idx} className="w-14 h-16 bg-black/40 border border-white/10 rounded-2xl flex items-center justify-center focus-within:border-primary focus-within:shadow-[0_0_15px_rgba(183,109,255,0.3)] transition-all">
+                  <input
+                    id={`pin-${idx}`}
+                    type="password"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    maxLength={1}
+                    value={digit}
+                    onChange={(e) => handlePinInput(idx, e.target.value)}
+                    onKeyDown={(e) => handlePinKeyDown(idx, e)}
+                    disabled={isAuthorizing}
+                    className="w-full h-full bg-transparent border-none text-center text-primary font-bold text-2xl focus:ring-0 p-0 disabled:opacity-50"
+                  />
+                </div>
+              ))}
+            </div>
+
+            <button 
+              disabled={isAuthorizing || pin.join('').length < 4}
+              onClick={() => executeToggle(pin.join(''))}
+              className="w-full h-16 rounded-2xl flex items-center justify-center gap-3 text-on-primary font-bold text-lg transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed bg-primary hover:bg-primary-hover"
+            >
+              {isAuthorizing ? (
+                <>
+                  <div className="w-5 h-5 border-2 border-on-primary border-t-transparent rounded-full animate-spin"></div>
+                  <span>Authorizing...</span>
+                </>
+              ) : (
+                <>
+                  <span>Confirm Securely</span>
+                  <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 1" }}>arrow_forward</span>
+                </>
+              )}
+            </button>
+            
+            <div className="mt-8 pt-6 border-t border-white/5 flex items-center justify-center gap-2">
+              <span className="material-symbols-outlined text-sm text-[#958da1]">lock</span>
+              <span className="text-xs text-[#958da1] uppercase tracking-widest font-bold">Encrypted Session v2.4</span>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

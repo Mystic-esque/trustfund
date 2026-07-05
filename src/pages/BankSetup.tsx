@@ -20,6 +20,11 @@ export default function BankSetup() {
   const [verifiedName, setVerifiedName] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
+  // PIN modal state
+  const [showPinModal, setShowPinModal] = useState(false);
+  const [pin, setPin] = useState(['', '', '', '']);
+  const [isAuthorizing, setIsAuthorizing] = useState(false);
+
   useEffect(() => {
     fetchBanks();
   }, []);
@@ -75,13 +80,39 @@ export default function BankSetup() {
     }
   };
 
-  const handleSave = async () => {
+  const handleSaveClick = () => {
+    if (!verifiedName || !selectedBankCode || !accountNumber) return;
+    
+    // Check if user has PIN setup
+    supabase.from('users').select('payment_pin').single().then(({data}) => {
+      if (!data?.payment_pin) {
+        toast('Please set up your payment PIN first', { icon: '🔒' });
+        navigate(`/payment-settings/pin-setup`);
+        return;
+      }
+      setShowPinModal(true);
+    });
+  };
+
+  const executeSave = async (finalPin: string) => {
     if (!verifiedName || !selectedBankCode || !accountNumber) return;
 
-    setSaving(true);
+    setIsAuthorizing(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
+
+      // Verify PIN
+      const res = await supabase.functions.invoke('verify-pin', {
+        body: { pin: finalPin }
+      });
+
+      if (res.error || !res.data?.success) {
+        throw new Error(res.error?.message || res.data?.error || "Incorrect PIN");
+      }
+
+      setSaving(true);
+      setShowPinModal(false);
 
       const bankName = banks.find(b => b.code === selectedBankCode)?.name || 'Unknown Bank';
 
@@ -106,6 +137,26 @@ export default function BankSetup() {
       toast.error(err.message || 'Failed to save bank details');
     } finally {
       setSaving(false);
+      setIsAuthorizing(false);
+    }
+  };
+
+  const handlePinInput = (index: number, value: string) => {
+    if (value.length > 1) return;
+    const newArr = [...pin];
+    newArr[index] = value.replace(/[^0-9]/g, '');
+    setPin(newArr);
+    
+    if (value !== '' && index < 3) {
+      document.getElementById(`pin-${index + 1}`)?.focus();
+    } else if (value !== '' && index === 3) {
+      executeSave(newArr.join(''));
+    }
+  };
+
+  const handlePinKeyDown = (index: number, e: React.KeyboardEvent) => {
+    if (e.key === 'Backspace' && pin[index] === '' && index > 0) {
+      document.getElementById(`pin-${index - 1}`)?.focus();
     }
   };
 
@@ -238,7 +289,7 @@ export default function BankSetup() {
             </button>
           ) : (
             <button 
-              onClick={handleSave}
+              onClick={handleSaveClick}
               disabled={saving}
               className="w-full font-bold py-4 rounded-xl bg-gradient-to-r from-primary to-[#b76dff] text-white hover:brightness-110 active:scale-[0.98] transition-all shadow-[0_0_20px_rgba(168,85,247,0.3)] disabled:opacity-50 disabled:cursor-not-allowed"
             >

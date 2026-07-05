@@ -200,6 +200,13 @@ serve(async (req) => {
 
       console.log(`Payout success — merchantTxRef: ${merchantTxRef}`);
 
+      if (merchantTxRef.startsWith("TF-WD-")) {
+        // It's a manual withdrawal. We already deducted balance and recorded ledger on success.
+        console.log(`Manual withdrawal successful for ${merchantTxRef}`);
+        await supabase.from("webhook_events").update({ processed: true, processed_at: new Date().toISOString() }).eq("request_id", requestId);
+        break;
+      }
+
       const { data: order, error: orderErr } = await supabase
         .from("orders")
         .select("*")
@@ -286,6 +293,47 @@ serve(async (req) => {
       const merchantTxRef = transaction.merchantTxRef as string;
 
       console.log(`Payout failed/refund — merchantTxRef: ${merchantTxRef}`);
+
+      if (merchantTxRef.startsWith("TF-WD-")) {
+        // Manual withdrawal failed/refunded
+        // Find the ledger entry
+        const { data: ledgerEntry } = await supabase
+          .from("ledger_entries")
+          .select("*")
+          .eq("entry_type", "WITHDRAWAL")
+          .eq("nomba_transaction_id", merchantTxRef)
+          .single();
+        
+        if (ledgerEntry && ledgerEntry.status !== "FAILED") {
+           // Refund user
+           const { data: user } = await supabase.from("users").select("id, available_balance").eq("id", ledgerEntry.user_id).single();
+           if (user) {
+             await supabase.from("users").update({
+               available_balance: Number(user.available_balance) + Number(ledgerEntry.amount)
+             }).eq("id", user.id);
+             
+             await supabase.from("ledger_entries").insert({
+               user_id: user.id,
+               entry_type: "REFUND",
+               amount: ledgerEntry.amount,
+               balance_effect: "available",
+               direction: "credit",
+               narration: `Refund for failed withdrawal`
+             });
+             
+             await supabase.from("ledger_entries").update({ status: "FAILED" }).eq("id", ledgerEntry.id);
+             
+             await supabase.from("notifications").insert({
+               user_id: user.id,
+               title: "Withdrawal Failed ❌",
+               body: `Your withdrawal of ₦${ledgerEntry.amount} failed and has been refunded to your wallet.`,
+               type: "payment"
+             });
+           }
+        }
+        await supabase.from("webhook_events").update({ processed: true, processed_at: new Date().toISOString() }).eq("request_id", requestId);
+        break;
+      }
 
       const { data: order, error: orderErr } = await supabase
         .from("orders")
