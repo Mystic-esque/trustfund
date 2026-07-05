@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import toast from 'react-hot-toast';
@@ -13,6 +13,8 @@ const VendorTimeline: React.FC<VendorTimelineProps> = ({ order }) => {
   const [trackingNumber, setTrackingNumber] = useState(order.tracking_number || '');
   const [courier, setCourier] = useState(order.shipping_courier || '');
   const [isUpdating, setIsUpdating] = useState(false);
+  const [proofFile, setProofFile] = useState<File | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Derive step status from order.status
   const isShipped = order.status !== 'PENDING_PAYMENT' && order.status !== 'ESCROW_LOCKED';
@@ -21,19 +23,35 @@ const VendorTimeline: React.FC<VendorTimelineProps> = ({ order }) => {
   const handleMarkAsShipped = async () => {
     setIsUpdating(true);
     try {
-      const updateData: any = { status: 'IN_TRANSIT' };
-      if (trackingNumber) updateData.tracking_number = trackingNumber;
-      if (courier) updateData.shipping_courier = courier;
+      let proofUrl = null;
+      if (proofFile) {
+        const fileExt = proofFile.name.split('.').pop();
+        const fileName = `${order.id}_${Date.now()}.${fileExt}`;
+        const filePath = `${currentUser.id}/${fileName}`;
+        
+        const { error: uploadError } = await supabase.storage
+          .from('order-proofs')
+          .upload(filePath, proofFile);
+          
+        if (uploadError) throw uploadError;
+        
+        const { data: { publicUrl } } = supabase.storage
+          .from('order-proofs')
+          .getPublicUrl(filePath);
+          
+        proofUrl = publicUrl;
+      }
 
-      const { error } = await supabase
-        .from('orders')
-        .update(updateData)
-        .eq('id', order.id);
+      const { error } = await supabase.rpc('mark_order_shipped', {
+        p_order_id: order.id,
+        p_vendor_id: currentUser.id,
+        p_tracking_number: trackingNumber || null,
+        p_shipping_courier: courier || null,
+        p_proof_url: proofUrl
+      });
 
       if (error) throw error;
       toast.success('Order marked as shipped!');
-      // Typically we would trigger a re-fetch here or rely on realtime updates,
-      // but assuming the parent page listens to realtime or we navigate back.
       window.location.reload();
     } catch (error: any) {
       toast.error(error.message || 'Failed to update order');
@@ -191,15 +209,44 @@ const VendorTimeline: React.FC<VendorTimelineProps> = ({ order }) => {
         {/* Proof of Delivery */}
         {!isShipped && (
           <section className="bg-[#201f1f]/60 backdrop-blur-md p-5 rounded-xl border-dashed border-2 border-[#4a4455]">
-            <div className="flex flex-col items-center justify-center py-4 space-y-3 cursor-pointer hover:bg-white/5 transition-colors">
-              <div className="w-12 h-12 rounded-full bg-[#353534] flex items-center justify-center text-primary">
-                <span className="material-symbols-outlined text-[32px]">add_a_photo</span>
+            <input 
+              type="file" 
+              ref={fileInputRef}
+              onChange={(e) => {
+                if (e.target.files && e.target.files[0]) {
+                  setProofFile(e.target.files[0]);
+                }
+              }}
+              className="hidden"
+              accept="image/*"
+            />
+            {proofFile ? (
+              <div className="flex flex-col items-center justify-center py-4 space-y-3">
+                <div className="w-16 h-16 rounded-xl overflow-hidden border border-[#4a4455] relative">
+                  <img src={URL.createObjectURL(proofFile)} alt="Proof" className="w-full h-full object-cover" />
+                  <button 
+                    onClick={(e) => { e.stopPropagation(); setProofFile(null); }}
+                    className="absolute top-1 right-1 bg-black/60 rounded-full w-5 h-5 flex items-center justify-center hover:bg-red-500/80"
+                  >
+                    <span className="material-symbols-outlined text-[12px] text-white">close</span>
+                  </button>
+                </div>
+                <p className="font-body-md text-sm text-on-background truncate max-w-[200px]">{proofFile.name}</p>
               </div>
-              <div className="text-center">
-                <p className="font-body-md font-semibold text-on-background">Proof of Shipment</p>
-                <p className="font-label-sm text-on-surface-variant">Upload waybill or item photo</p>
+            ) : (
+              <div 
+                onClick={() => fileInputRef.current?.click()}
+                className="flex flex-col items-center justify-center py-4 space-y-3 cursor-pointer hover:bg-white/5 transition-colors"
+              >
+                <div className="w-12 h-12 rounded-full bg-[#353534] flex items-center justify-center text-primary">
+                  <span className="material-symbols-outlined text-[32px]">add_a_photo</span>
+                </div>
+                <div className="text-center">
+                  <p className="font-body-md font-semibold text-on-background">Proof of Shipment</p>
+                  <p className="font-label-sm text-on-surface-variant">Upload waybill or item photo</p>
+                </div>
               </div>
-            </div>
+            )}
           </section>
         )}
 
