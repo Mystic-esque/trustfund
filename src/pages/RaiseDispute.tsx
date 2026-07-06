@@ -51,15 +51,12 @@ export default function RaiseDispute() {
     
     setIsSubmitting(true);
     try {
-      // Update order status
-      const { error: updateError } = await supabase
-        .from("orders")
-        .update({ 
-          status: "DISPUTED",
-          dispute_reason: selectedReason,
-          dispute_description: description
-        })
-        .eq("id", order.id);
+      // Update order status securely
+      const { error: updateError } = await supabase.rpc('raise_dispute', {
+        p_order_id: order.id,
+        p_reason: selectedReason,
+        p_description: description
+      });
 
       if (updateError) throw updateError;
 

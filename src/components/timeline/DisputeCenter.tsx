@@ -4,12 +4,14 @@ import { supabase } from '../../lib/supabase';
 
 interface DisputeCenterProps {
   order: any;
+  currentUser: any;
 }
 
-const DisputeCenter: React.FC<DisputeCenterProps> = ({ order }) => {
+const DisputeCenter: React.FC<DisputeCenterProps> = ({ order, currentUser }) => {
   const navigate = useNavigate();
   const [systemMessages, setSystemMessages] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [cancelling, setCancelling] = useState(false);
 
   useEffect(() => {
     const fetchSystemMessages = async () => {
@@ -32,6 +34,25 @@ const DisputeCenter: React.FC<DisputeCenterProps> = ({ order }) => {
 
     fetchSystemMessages();
   }, [order.id]);
+
+  const handleCancelDispute = async () => {
+    if (!window.confirm("Are you sure you want to withdraw this dispute?")) return;
+    setCancelling(true);
+    try {
+      const { error } = await supabase.rpc('cancel_dispute', {
+        p_order_id: order.id
+      });
+      if (error) throw error;
+      
+      // Navigate or reload to reflect the restored status
+      window.location.reload();
+    } catch (err: any) {
+      console.error("Cancel failed:", err);
+      alert(err.message || 'Failed to cancel dispute');
+    } finally {
+      setCancelling(false);
+    }
+  };
 
   return (
     <div className="min-h-screen w-full text-[#e5e2e1] bg-background font-body-md antialiased pb-32">
@@ -137,7 +158,7 @@ const DisputeCenter: React.FC<DisputeCenterProps> = ({ order }) => {
 
       {/* Bottom Action Area */}
       <footer className="fixed bottom-0 left-0 w-full z-50 p-5 bg-background/80 backdrop-blur-md border-t border-white/5">
-        <div className="max-w-[600px] mx-auto">
+        <div className="max-w-[600px] mx-auto flex flex-col gap-3">
           <button 
             onClick={() => navigate(`/orders/${order.id}/chat`)}
             className="w-full bg-white text-[#101415] font-bold py-4 rounded-xl active:scale-[0.98] transition-all flex items-center justify-center space-x-2"
@@ -145,6 +166,16 @@ const DisputeCenter: React.FC<DisputeCenterProps> = ({ order }) => {
             <span>View Deal Chat</span>
             <span className="material-symbols-outlined text-lg">chat</span>
           </button>
+          
+          {currentUser?.id === order.buyer_id && (
+            <button 
+              onClick={handleCancelDispute}
+              disabled={cancelling}
+              className="w-full bg-transparent border border-[#ccc3d8]/30 text-[#ccc3d8] font-bold py-4 rounded-xl active:scale-[0.98] hover:bg-white/5 transition-all flex items-center justify-center disabled:opacity-50"
+            >
+              {cancelling ? 'Withdrawing...' : 'Withdraw Dispute'}
+            </button>
+          )}
         </div>
       </footer>
     </div>

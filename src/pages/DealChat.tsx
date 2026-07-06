@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useDealChat } from '../hooks/useDealChat';
 
 export default function DealChat() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [order, setOrder] = useState<any>(null);
   const [otherParty, setOtherParty] = useState<any>(null);
@@ -78,10 +79,23 @@ export default function DealChat() {
     setInputText('');
   };
 
-  const handleResolution = async (resolution: 'refund' | 'settle') => {
+  const handleResolution = async (resolution: 'refund' | 'settle' | 'dismiss') => {
     if (!order) return;
     setIsResolving(true);
     try {
+      if (resolution === 'dismiss') {
+        const { error } = await supabase.rpc('cancel_dispute', { p_order_id: order.id });
+        if (error) throw error;
+        await supabase.from('messages').insert([{
+          order_id: order.id,
+          sender_type: 'system',
+          content: `Dispute Dismissed by Mediator. Order timeline restored.`,
+          message_type: 'status_update'
+        }]);
+        window.location.reload();
+        return;
+      }
+
       const { error } = await supabase.rpc('resolve_dispute', {
         p_order_id: order.id,
         p_resolution: resolution
@@ -136,7 +150,10 @@ export default function DealChat() {
         <div className="flex items-center gap-3">
           <button 
             onClick={() => {
-              if (isAdmin) {
+              const from = location.state?.from;
+              if (from) {
+                navigate(from);
+              } else if (isAdmin) {
                 navigate('/admin/disputes');
               } else {
                 navigate(`/orders/${order.id}`);
@@ -225,20 +242,27 @@ export default function DealChat() {
       {isAdmin && order.status === 'DISPUTED' && (
         <div className="p-4 bg-error-container/10 border-t border-error/20 flex flex-col gap-3">
           <div className="text-sm text-error/80 font-bold mb-1">Mediator Actions</div>
-          <div className="flex gap-3">
+          <div className="flex gap-2">
             <button
               onClick={() => handleResolution('refund')}
               disabled={isResolving}
-              className="flex-1 py-3 rounded-full bg-error text-white font-bold text-sm disabled:opacity-50 active:scale-95 transition-all"
+              className="flex-1 py-2 rounded-full bg-error text-white font-bold text-xs disabled:opacity-50 active:scale-95 transition-all"
             >
-              {isResolving ? 'Resolving...' : 'Refund Buyer'}
+              {isResolving ? '...' : 'Refund'}
             </button>
             <button
               onClick={() => handleResolution('settle')}
               disabled={isResolving}
-              className="flex-1 py-3 rounded-full bg-primary text-white font-bold text-sm disabled:opacity-50 active:scale-95 transition-all"
+              className="flex-1 py-2 rounded-full bg-primary text-white font-bold text-xs disabled:opacity-50 active:scale-95 transition-all"
             >
-              {isResolving ? 'Resolving...' : 'Settle Vendor'}
+              {isResolving ? '...' : 'Settle'}
+            </button>
+            <button
+              onClick={() => handleResolution('dismiss')}
+              disabled={isResolving}
+              className="flex-1 py-2 rounded-full bg-transparent border border-error/50 text-error font-bold text-xs disabled:opacity-50 active:scale-95 transition-all"
+            >
+              {isResolving ? '...' : 'Dismiss'}
             </button>
           </div>
         </div>

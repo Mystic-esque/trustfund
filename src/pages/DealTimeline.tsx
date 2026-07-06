@@ -88,7 +88,7 @@ const DealTimeline = () => {
   }
 
   if (order.status === 'DISPUTED') {
-    return <DisputeCenter order={order} />;
+    return <DisputeCenter order={order} currentUser={currentUser} />;
   }
 
   if (['SETTLED', 'REFUNDED', 'EXPIRED'].includes(order.status)) {

@@ -147,7 +147,7 @@ export default function Messages() {
             filteredChats.map((chat) => (
               <div 
                 key={chat.order_id} 
-                onClick={() => navigate(`/orders/${chat.order_id}/chat`)}
+                onClick={() => navigate(`/orders/${chat.order_id}/chat`, { state: { from: '/messages' } })}
                 className="bg-[rgba(32,31,31,0.6)] backdrop-blur-xl border border-[#4a4455]/30 rounded-2xl p-4 flex gap-4 items-center cursor-pointer hover:bg-[#353534]/50 transition-colors relative group active:scale-[0.98]"
               >
                 {/* Unread Indicator Pill */}

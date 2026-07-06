@@ -142,12 +142,10 @@ const VendorTimeline: React.FC<VendorTimelineProps> = ({ order, currentUser }) =
             {/* Step 2 */}
             <div className="relative flex items-start space-x-4">
               <div className={`absolute left-3 top-6 bottom-[-24px] w-0.5 ${isDelivered ? 'bg-[#d2bbff]' : 'bg-[#4a4455]'}`}></div>
-              <div className={`z-10 w-6 h-6 rounded-full flex items-center justify-center ${isShipped ? (isDelivered ? 'bg-[#4edea3]' : 'bg-primary-container border-4 border-background') : 'bg-[#353534]'}`}>
-                {isDelivered ? (
+              <div className={`z-10 w-6 h-6 rounded-full flex items-center justify-center ${isShipped ? 'bg-[#4edea3]' : 'bg-[#353534]'}`}>
+                {isShipped && (
                   <span className="material-symbols-outlined text-[#003824] text-[16px]" style={{ fontWeight: 700 }}>check</span>
-                ) : isShipped ? (
-                  <div className="w-2 h-2 rounded-full bg-white animate-pulse"></div>
-                ) : null}
+                )}
               </div>
               <div className="flex-1">
                 <h4 className={`font-body-md font-semibold ${isDelivered ? 'text-on-background' : isShipped ? 'text-primary' : 'text-on-surface-variant'}`}>Shipped</h4>
@@ -157,10 +155,12 @@ const VendorTimeline: React.FC<VendorTimelineProps> = ({ order, currentUser }) =
             
             {/* Step 3 */}
             <div className="relative flex items-start space-x-4">
-              <div className={`z-10 w-6 h-6 rounded-full flex items-center justify-center ${isDelivered ? 'bg-[#4edea3]' : 'bg-[#353534]'}`}>
-                {isDelivered && (
+              <div className={`z-10 w-6 h-6 rounded-full flex items-center justify-center ${isDelivered ? 'bg-[#4edea3]' : isShipped ? 'bg-primary-container border-4 border-background' : 'bg-[#353534]'}`}>
+                {isDelivered ? (
                   <span className="material-symbols-outlined text-[#003824] text-[16px]" style={{ fontWeight: 700 }}>check</span>
-                )}
+                ) : isShipped ? (
+                  <div className="w-2 h-2 rounded-full bg-white animate-pulse"></div>
+                ) : null}
               </div>
               <div className="flex-1">
                 <h4 className={`font-body-md font-semibold ${isDelivered ? 'text-on-background' : 'text-on-surface-variant'}`}>Delivered</h4>
