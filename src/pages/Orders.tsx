@@ -85,7 +85,7 @@ const Orders = () => {
   const [deals, setDeals] = useState<Deal[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  const filters = ['All', 'Locked', 'In Transit', 'Completed', 'Disputed'];
+  const filters = ['All', 'Pending', 'Locked', 'In Transit', 'Completed', 'Disputed'];
 
   useEffect(() => {
     const fetchOrders = async () => {
@@ -95,6 +95,13 @@ const Orders = () => {
         return;
       }
 
+      const pendingDealsLocal = JSON.parse(localStorage.getItem('pending_deals') || '[]');
+      const pendingIds = pendingDealsLocal.map((d: any) => d.id).filter(Boolean);
+      let orString = `vendor_id.eq.${user.id},buyer_id.eq.${user.id}`;
+      if (pendingIds.length > 0) {
+        orString += `,id.in.(${pendingIds.join(',')})`;
+      }
+
       const { data: ordersData } = await supabase
         .from('orders')
         .select(`
@@ -102,17 +109,30 @@ const Orders = () => {
           vendor:users!orders_vendor_id_fkey(full_name),
           buyer:users!orders_buyer_id_fkey(full_name)
         `)
-        .or(`vendor_id.eq.${user.id},buyer_id.eq.${user.id}`)
+        .or(orString)
         .order('created_at', { ascending: false });
 
       if (ordersData) {
-        const mappedDeals = ordersData.map((o: any) => {
+        const mappedDeals = [];
+        const validPendingIds: string[] = [];
+
+        for (const o of ordersData) {
           const isVendor = o.vendor_id === user.id;
-          const otherPartyName = isVendor ? (o.buyer?.full_name || 'Buyer') : (o.vendor?.full_name || 'Vendor');
+          const isBuyer = o.buyer_id === user.id;
+
+          if (!isVendor && !isBuyer) {
+            // This is a pending deal from localStorage.
+            if (o.status !== 'PENDING_PAYMENT' || (o.buyer_id && o.buyer_id !== user.id)) {
+              continue;
+            }
+            validPendingIds.push(o.id);
+          }
+
+          const otherPartyName = isVendor ? (o.buyer?.full_name || 'Unknown Buyer') : (o.vendor?.full_name || 'Unknown Vendor');
           const dateObj = new Date(o.created_at);
           const monthYear = dateObj.toLocaleString('en-US', { month: 'long', year: 'numeric' });
 
-          return {
+          mappedDeals.push({
             id: o.id,
             title: o.item_name,
             sellerHandle: `@${otherPartyName.replace(/\s+/g, '_').toLowerCase()}`,
@@ -120,8 +140,14 @@ const Orders = () => {
             status: o.status,
             date: monthYear,
             imageUrl: o.item_image_url
-          };
-        });
+          });
+        }
+
+        if (pendingIds.length !== validPendingIds.length) {
+          const newPending = pendingDealsLocal.filter((d: any) => validPendingIds.includes(d.id));
+          localStorage.setItem('pending_deals', JSON.stringify(newPending));
+        }
+
         setDeals(mappedDeals);
       }
       setIsLoading(false);
@@ -136,6 +162,7 @@ const Orders = () => {
     if (activeFilter !== 'All') {
       const targetStatus = activeFilter.toUpperCase().replace(' ', '_');
       result = result.filter(deal => {
+        if (activeFilter === 'Pending') return deal.status === 'PENDING_PAYMENT';
         if (activeFilter === 'Locked') return deal.status === 'ESCROW_LOCKED' || deal.status === 'LOCKED';
         if (activeFilter === 'Completed') return deal.status === 'COMPLETED' || deal.status === 'SETTLED';
         if (activeFilter === 'In Transit') return deal.status === 'IN_TRANSIT' || deal.status === 'DELIVERED_PENDING_RELEASE';

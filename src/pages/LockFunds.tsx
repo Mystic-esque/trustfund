@@ -33,7 +33,17 @@ const LockFunds = () => {
           .select('*, vendor:users!orders_vendor_id_fkey(full_name, completed_deals_count)')
           .eq('id', id)
           .single();
-        if (orderData) setOrder(orderData);
+        if (orderData) {
+          setOrder(orderData);
+          
+          if (orderData.status === 'PENDING_PAYMENT' && (!orderData.buyer_id || orderData.buyer_id === user.id)) {
+            const pendingDeals = JSON.parse(localStorage.getItem('pending_deals') || '[]');
+            const existing = pendingDeals.findIndex((d: any) => d.id === id);
+            if (existing >= 0) pendingDeals.splice(existing, 1);
+            pendingDeals.unshift({ id, item_name: orderData.item_name, amount: orderData.amount, timestamp: Date.now() });
+            localStorage.setItem('pending_deals', JSON.stringify(pendingDeals.slice(0, 10)));
+          }
+        }
       }
 
       setIsLoading(false);
@@ -141,6 +151,17 @@ const LockFunds = () => {
     return <div className="min-h-screen bg-[#101415] flex items-center justify-center text-white">Order not found.</div>;
   }
 
+  if (order.status !== 'PENDING_PAYMENT' || (order.buyer_id && order.buyer_id !== userData.id)) {
+    return (
+      <div className="min-h-screen bg-[#101415] flex flex-col items-center justify-center text-white px-5">
+        <span className="material-symbols-outlined text-[64px] text-error mb-4">cancel</span>
+        <h2 className="text-2xl font-bold mb-2 text-center tracking-tight">Deal Unavailable</h2>
+        <p className="text-on-surface-variant/80 text-center mb-8 max-w-xs">This deal has already been claimed, paid for, or is no longer available.</p>
+        <button onClick={() => navigate('/deals')} className="px-6 py-3 rounded-full bg-surface-container-high hover:bg-surface-container-highest transition-colors font-bold">Return to Deals</button>
+      </div>
+    );
+  }
+
   const userBalance = Number(userData.available_balance || 0);
   const dealPrice = Number(order.amount);
   const isSufficient = userBalance >= dealPrice;
@@ -153,7 +174,7 @@ const LockFunds = () => {
         <header className="fixed top-0 w-full z-50 bg-[#0b0b0d]/80 backdrop-blur-xl border-b border-white/10 max-w-[600px] left-1/2 -translate-x-1/2">
           <div className="flex items-center px-5 h-16">
             <button 
-              onClick={() => navigate(-1)}
+              onClick={() => navigate('/deals')}
               className="w-10 h-10 flex items-center justify-center rounded-full bg-white/5 border border-white/10 text-white hover:bg-white/10 transition-colors active:scale-95"
             >
               <span className="material-symbols-outlined text-[20px]">arrow_back</span>
@@ -235,7 +256,7 @@ const LockFunds = () => {
       {/* Top Navigation */}
       <header className="fixed top-0 w-full z-50 backdrop-blur-[40px] border-b border-white/10 h-20 flex items-center px-5 md:px-16 justify-between">
         <div className="flex items-center gap-2">
-          <button onClick={() => navigate(-1)} className="mr-2 active:scale-95 transition-transform"><span className="material-symbols-outlined text-[#e0e3e5]">arrow_back</span></button>
+          <button onClick={() => navigate('/deals')} className="mr-2 active:scale-95 transition-transform"><span className="material-symbols-outlined text-[#e0e3e5]">arrow_back</span></button>
           <img src="/images/logo.svg" alt="TrustFund Logo" className="h-8 w-8 object-contain" />
           <span className="font-headline-lg-mobile md:font-headline-lg tracking-tighter text-[#ddb7ff] uppercase">TRUSTFUND</span>
         </div>

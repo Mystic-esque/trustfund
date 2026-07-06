@@ -10,6 +10,7 @@ export default function BankSetup() {
 
   const [banks, setBanks] = useState<any[]>([]);
   const [loadingBanks, setLoadingBanks] = useState(true);
+  const [userData, setUserData] = useState<any>(null);
   
   const [accountNumber, setAccountNumber] = useState('');
   const [selectedBankCode, setSelectedBankCode] = useState('');
@@ -26,8 +27,22 @@ export default function BankSetup() {
   const [isAuthorizing, setIsAuthorizing] = useState(false);
 
   useEffect(() => {
-    fetchBanks();
+    fetchUserAndBanks();
   }, []);
+
+  const fetchUserAndBanks = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data: profile } = await supabase.from('users').select('*').eq('id', user.id).single();
+        if (profile) setUserData(profile);
+      }
+    } catch (e) {
+      console.error(e);
+    }
+    
+    fetchBanks();
+  };
 
   const fetchBanks = async () => {
     try {
@@ -195,6 +210,33 @@ export default function BankSetup() {
             Link a Nigerian bank account to withdraw your funds or receive automatic payouts.
           </p>
         </div>
+
+        {userData?.bank_account_number && (
+          <div className="mb-6 animate-in fade-in zoom-in duration-500">
+            <h3 className="font-label-lg font-bold text-on-surface-variant/80 px-1 text-sm mb-3">Continue with this:</h3>
+            <div 
+              onClick={() => {
+                if (redirect === 'withdraw') navigate('/withdraw/amount');
+                else navigate(-1);
+              }}
+              className="w-full p-4 rounded-2xl bg-primary/10 border border-primary/20 flex items-center gap-4 cursor-pointer hover:bg-primary/20 transition-colors"
+            >
+              <div className="w-12 h-12 rounded-xl bg-primary/20 flex items-center justify-center shrink-0">
+                <span className="material-symbols-outlined text-primary">account_balance</span>
+              </div>
+              <div className="flex-1 overflow-hidden text-left">
+                <p className="font-body-md font-bold text-white truncate">{userData.bank_account_name}</p>
+                <p className="font-body-sm text-on-surface-variant/80 text-xs mt-0.5">{userData.bank_name} • {userData.bank_account_number}</p>
+              </div>
+              <span className="material-symbols-outlined text-primary">chevron_right</span>
+            </div>
+            <div className="relative flex items-center py-6">
+              <div className="flex-grow border-t border-white/10"></div>
+              <span className="flex-shrink-0 mx-4 text-white/40 text-xs font-medium uppercase tracking-widest">Or Link Another</span>
+              <div className="flex-grow border-t border-white/10"></div>
+            </div>
+          </div>
+        )}
 
         <div className="space-y-4">
           <div className="space-y-2">

@@ -18,6 +18,8 @@ interface OrderDetails {
   disputes: number;
   price: number;
   vendorId: string;
+  status: string;
+  buyerId: string | null;
 }
 
 const PublicOrderSummary = () => {
@@ -80,7 +82,17 @@ const PublicOrderSummary = () => {
           disputes: 0, // mock
           price: finalOrderData.amount,
           vendorId: vendor.id,
+          status: finalOrderData.status,
+          buyerId: finalOrderData.buyer_id,
         });
+
+        if (finalOrderData.status === 'PENDING_PAYMENT' && (!finalOrderData.buyer_id || finalOrderData.buyer_id === currentUserId)) {
+          const pendingDeals = JSON.parse(localStorage.getItem('pending_deals') || '[]');
+          const existing = pendingDeals.findIndex((d: any) => d.id === finalOrderData.id);
+          if (existing >= 0) pendingDeals.splice(existing, 1);
+          pendingDeals.unshift({ id: finalOrderData.id, item_name: finalOrderData.item_name, amount: finalOrderData.amount, timestamp: Date.now() });
+          localStorage.setItem('pending_deals', JSON.stringify(pendingDeals.slice(0, 10)));
+        }
 
       } catch (err: any) {
         setError(err.message);
@@ -107,6 +119,17 @@ const PublicOrderSummary = () => {
         <h1 className="text-2xl font-bold">Deal Not Found</h1>
         <p className="text-white/60">{error}</p>
         <button onClick={() => navigate('/')} className="px-6 py-2 bg-white/10 rounded-full hover:bg-white/20 transition-colors">Go Home</button>
+      </div>
+    );
+  }
+
+  if (order.status !== 'PENDING_PAYMENT' || (order.buyerId && order.buyerId !== currentUserId)) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center text-white space-y-4 px-5 text-center" style={{ background: '#101415' }}>
+        <span className="material-symbols-outlined text-6xl text-error mb-2">cancel</span>
+        <h1 className="text-2xl font-bold">Deal Unavailable</h1>
+        <p className="text-white/60 max-w-xs">This deal has already been claimed, paid for, or is no longer available.</p>
+        <button onClick={() => navigate('/')} className="px-6 py-2 mt-4 bg-white/10 rounded-full hover:bg-white/20 transition-colors">Go Home</button>
       </div>
     );
   }
