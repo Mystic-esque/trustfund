@@ -54,6 +54,7 @@ export function useInbox() {
       const orderIds = orders.map((o) => o.id);
       
       let latestMessagesMap: Record<string, any> = {};
+      let allMessages: any[] = [];
       
       if (orderIds.length > 0) {
         const { data: messagesData, error: msgsError } = await supabase
@@ -69,6 +70,7 @@ export function useInbox() {
               latestMessagesMap[msg.order_id] = msg;
             }
           });
+          allMessages = messagesData;
         }
       }
 
@@ -79,9 +81,9 @@ export function useInbox() {
         const lastReadAt = isVendor ? order.vendor_last_read_at : order.buyer_last_read_at;
 
         let unreadCount = 0;
-        if (messagesData) {
-          unreadCount = messagesData.filter(
-            (m) => m.order_id === order.id && m.sender_id !== user.id && (!lastReadAt || new Date(m.created_at) > new Date(lastReadAt))
+        if (allMessages.length > 0) {
+          unreadCount = allMessages.filter(
+            (m: any) => m.order_id === order.id && m.sender_id !== user.id && (!lastReadAt || new Date(m.created_at) > new Date(lastReadAt))
           ).length;
         }
 

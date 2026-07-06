@@ -114,7 +114,7 @@ export function useDealChat(orderId: string | undefined, currentUserId: string |
     if (error) {
       console.error('Error sending message:', error);
       // Remove optimistic message if failed
-      setMessages((prev) => prev.filter(m => m.id !== tempId));
+      setMessages((prev) => prev.filter(m => m.id !== messageId));
     }
   };
 
