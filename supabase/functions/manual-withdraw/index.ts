@@ -129,7 +129,9 @@ serve(async (req) => {
     }
 
     const transferData = await transferRes.json();
+    console.log("Nomba Transfer Response:", JSON.stringify(transferData));
     const txStatus = transferData?.data?.status || "PENDING_BILLING";
+    const sessionId = transferData?.data?.sessionId || transferData?.data?.session_id || transferData?.data?.id;
 
     if (txStatus === "SUCCESS" || txStatus === "PENDING_BILLING") {
       // Deduct available_balance
@@ -146,6 +148,7 @@ serve(async (req) => {
           balance_effect: "available",
           direction: "debit",
           nomba_transaction_id: merchantTxRef,
+          nomba_session_id: sessionId,
           narration: `Withdrawal to ${vendor.bank_account_number}`
         }
       ]);

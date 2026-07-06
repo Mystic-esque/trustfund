@@ -177,7 +177,14 @@ serve(async (req) => {
     }
 
     const transferData = await transferRes.json();
+    console.log("Nomba Transfer Response:", JSON.stringify(transferData));
+    
     const txStatus = transferData?.data?.status || "PENDING_BILLING";
+    const sessionId = transferData?.data?.sessionId || transferData?.data?.session_id || transferData?.data?.id;
+
+    if (sessionId) {
+      await supabase.from("orders").update({ nomba_session_id: sessionId }).eq("id", orderId);
+    }
 
     if (txStatus === "SUCCESS") {
       // Settle immediately
