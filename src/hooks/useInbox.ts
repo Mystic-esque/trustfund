@@ -58,7 +58,6 @@ export function useInbox() {
       const orderIds = orders.map((o) => o.id);
       
       let latestMessagesMap: Record<string, any> = {};
-      let allMessages: any[] = [];
       
       if (orderIds.length > 0) {
         const { data: messagesData, error: msgsError } = await supabase
