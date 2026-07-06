@@ -255,7 +255,7 @@ const PublicOrderSummary = () => {
       </main>
 
       {/* Bottom Navigation Shell */}
-      <BottomNav />
+      {currentUserId && <BottomNav />}
     </div>
   );
 };

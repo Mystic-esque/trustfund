@@ -62,15 +62,46 @@ const Home = () => {
       
       if (profile) setUserData(profile);
 
-      // Fetch recent orders
+      // Fetch recent orders including pending
+      const pendingDealsLocal = JSON.parse(localStorage.getItem('pending_deals') || '[]');
+      const pendingIds = pendingDealsLocal.map((d: any) => d.id).filter(Boolean);
+      let orString = `vendor_id.eq.${user.id},buyer_id.eq.${user.id}`;
+      if (pendingIds.length > 0) {
+        orString += `,id.in.(${pendingIds.join(',')})`;
+      }
+
       const { data: userOrders } = await supabase
         .from('orders')
-        .select('*')
-        .or(`vendor_id.eq.${user.id},buyer_id.eq.${user.id}`)
-        .order('created_at', { ascending: false })
-        .limit(3);
+        .select(`
+          *,
+          vendor:users!orders_vendor_id_fkey(full_name),
+          buyer:users!orders_buyer_id_fkey(full_name)
+        `)
+        .or(orString)
+        .order('created_at', { ascending: false });
       
-      if (userOrders) setOrders(userOrders);
+      if (userOrders) {
+        const validOrders = [];
+        const validPendingIds: string[] = [];
+
+        for (const o of userOrders) {
+          const isVendor = o.vendor_id === user.id;
+          const isBuyer = o.buyer_id === user.id;
+
+          if (!isVendor && !isBuyer) {
+            if (o.status !== 'PENDING_PAYMENT' || (o.buyer_id && o.buyer_id !== user.id)) continue;
+            validPendingIds.push(o.id);
+          }
+          validOrders.push(o);
+        }
+
+        if (pendingIds.length !== validPendingIds.length) {
+          const newPending = pendingDealsLocal.filter((d: any) => validPendingIds.includes(d.id));
+          localStorage.setItem('pending_deals', JSON.stringify(newPending));
+        }
+
+        setOrders(validOrders.slice(0, 3));
+      }
     };
 
     fetchUser();
@@ -292,7 +323,7 @@ const Home = () => {
               <span className="font-label-sm text-white/60 group-hover:text-white transition-colors text-xs text-center">Withdraw</span>
             </Link>
 
-            <Link to="/orders" className="flex flex-col items-center gap-3 group">
+            <Link to="/orders?filter=In_Transit" className="flex flex-col items-center gap-3 group">
               <div className="w-14 h-14 rounded-2xl glass-button flex items-center justify-center group-hover:bg-white/10 transition-all group-active:scale-90">
                 <span className="material-symbols-outlined text-white">key</span>
               </div>
@@ -326,7 +357,17 @@ const Home = () => {
                   }
 
                   return (
-                    <Link key={order.id} to={`/orders/${order.id}`} className="glass-container rounded-2xl p-4 flex items-center justify-between hover:bg-white/[0.06] transition-all cursor-pointer active:scale-[0.98]">
+                    <div 
+                      key={order.id} 
+                      onClick={() => {
+                        if (order.status === 'PENDING_PAYMENT' && !isVendor) {
+                          navigate(`/orders/${order.id}/lock`);
+                        } else {
+                          navigate(`/orders/${order.id}`);
+                        }
+                      }}
+                      className="glass-container rounded-2xl p-4 flex items-center justify-between hover:bg-white/[0.06] transition-all cursor-pointer active:scale-[0.98]"
+                    >
                       <div className="flex items-center gap-4">
                         <div className="w-12 h-12 rounded-full overflow-hidden bg-white/10 border border-white/20 shrink-0 flex items-center justify-center">
                           {order.item_image_url ? (
@@ -346,7 +387,7 @@ const Home = () => {
                           {order.status.replace(/_/g, ' ')}
                         </div>
                       </div>
-                    </Link>
+                    </div>
                   );
                 })
               )}

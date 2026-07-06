@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import BottomNav from '../components/BottomNav';
 import { supabase } from '../lib/supabase';
 import './Orders.css';
@@ -14,6 +14,7 @@ interface Deal {
   imageUrl?: string;
   avatarUrl?: string;
   iconName?: string;
+  isVendor: boolean;
 }
 
 const getStatusStyle = (status: string) => {
@@ -48,7 +49,13 @@ const DealCard = ({ deal }: { deal: Deal }) => {
   const navigate = useNavigate();
   return (
     <div 
-      onClick={() => navigate(`/orders/${deal.id}`)} 
+      onClick={() => {
+        if (deal.status === 'PENDING_PAYMENT' && !deal.isVendor) {
+          navigate(`/orders/${deal.id}/lock`);
+        } else {
+          navigate(`/orders/${deal.id}`);
+        }
+      }} 
       className="aether-glass-orders rounded-2xl p-5 flex items-center justify-between active:scale-[0.98] transition-all cursor-pointer"
     >
       <div className="flex items-center gap-4">
@@ -80,7 +87,12 @@ const DealCard = ({ deal }: { deal: Deal }) => {
 
 const Orders = () => {
   const navigate = useNavigate();
-  const [activeFilter, setActiveFilter] = useState('All');
+  const [searchParams] = useSearchParams();
+  const [activeFilter, setActiveFilter] = useState(() => {
+    const filterQuery = searchParams.get('filter');
+    if (filterQuery === 'In_Transit') return 'In Transit';
+    return 'All';
+  });
   const [searchQuery, setSearchQuery] = useState('');
   const [deals, setDeals] = useState<Deal[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -139,7 +151,8 @@ const Orders = () => {
             price: Number(o.amount),
             status: o.status,
             date: monthYear,
-            imageUrl: o.item_image_url
+            imageUrl: o.item_image_url,
+            isVendor
           });
         }
 
