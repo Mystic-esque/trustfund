@@ -19,6 +19,7 @@ export function useInbox() {
   const [chats, setChats] = useState<InboxChat[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentUser, setCurrentUser] = useState<any>(null);
+  const userRef = useRef<any>(null);
 
   useEffect(() => {
     let isMounted = true;
@@ -29,7 +30,10 @@ export function useInbox() {
         if (isMounted) setLoading(false);
         return;
       }
-      if (isMounted) setCurrentUser(user);
+      if (isMounted) {
+        setCurrentUser(user);
+        userRef.current = user;
+      }
 
       // Fetch all orders for this user
       const { data: orders, error: ordersError } = await supabase
@@ -136,6 +140,9 @@ export function useInbox() {
                   latest_message_time: newMsg.created_at,
                   latest_message_sender_id: newMsg.sender_id,
                   latest_message_sender_type: newMsg.sender_type,
+                  unread_count: (newMsg.sender_id && userRef.current && newMsg.sender_id !== userRef.current.id) 
+                                ? chat.unread_count + 1 
+                                : chat.unread_count,
                 };
               }
               return chat;

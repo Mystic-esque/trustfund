@@ -56,7 +56,14 @@ export function useDealChat(orderId: string | undefined, currentUserId: string |
           if (isMounted) {
             setMessages((prev) => {
               // Check if we already have it (optimistic update case)
-              if (prev.find(m => m.id === payload.new.id)) return prev;
+              const isDuplicate = prev.some(m => 
+                m.id.toLowerCase() === payload.new.id.toLowerCase() || 
+                (m.content === payload.new.content && m.sender_id === payload.new.sender_id && m.id !== payload.new.id) // Fallback for ID mismatch
+              );
+              if (isDuplicate) {
+                // If it was an ID mismatch, let's swap the optimistic one for the real one from DB to avoid ID conflicts later
+                return prev.map(m => (m.id.toLowerCase() === payload.new.id.toLowerCase() || m.content === payload.new.content) ? (payload.new as DealMessage) : m);
+              }
               return [...prev, payload.new as DealMessage];
             });
             scrollToBottom();
