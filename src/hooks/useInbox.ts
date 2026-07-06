@@ -151,6 +151,40 @@ export function useInbox() {
               return timeB - timeA;
             });
           });
+          });
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'orders' },
+        (payload) => {
+          if (!isMounted || !userRef.current) return;
+          const updatedOrder = payload.new;
+          
+          setChats((prevChats) => {
+            return prevChats.map((chat) => {
+              if (chat.order_id === updatedOrder.id) {
+                // If it's the current user's order update, and last_read_at is updated, we can just assume has_unread is false
+                // A more exact check would be to see if vendor_last_read_at / buyer_last_read_at changed.
+                // We'll just aggressively set has_unread = false when the order updates if it's currently true
+                // because the only time the order updates from the current user in a way that affects chat is reading it or changing status.
+                // But it's safer to only do it if the order status hasn't changed. Actually, let's just fetch it precisely.
+                const isVendor = updatedOrder.vendor_id === userRef.current.id;
+                const lastReadAt = isVendor ? updatedOrder.vendor_last_read_at : updatedOrder.buyer_last_read_at;
+                let hasUnread = false;
+                if (chat.latest_message_sender_id !== userRef.current.id) {
+                  hasUnread = !lastReadAt || new Date(chat.latest_message_time || 0) > new Date(lastReadAt);
+                }
+
+                return {
+                  ...chat,
+                  has_unread: hasUnread,
+                  status: updatedOrder.status, // Keep status fresh too!
+                };
+              }
+              return chat;
+            });
+          });
         }
       )
       .subscribe();
