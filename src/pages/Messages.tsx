@@ -174,7 +174,14 @@ export default function Messages() {
                 <div className="flex-1 min-w-0 flex flex-col justify-center">
                   <div className="flex justify-between items-baseline mb-1">
                     <h3 className="font-label-lg text-[15px] text-[#e5e2e1] font-bold truncate pr-2">{chat.other_party_name}</h3>
-                    <span className="font-label-sm text-[11px] text-[#ccc3d8] shrink-0">{formatTime(chat.latest_message_time)}</span>
+                    <div className="flex items-center gap-2 shrink-0">
+                        <span className="font-label-sm text-[11px] text-[#ccc3d8]">{formatTime(chat.latest_message_time)}</span>
+                        {chat.unread_count > 0 && (
+                            <div className="w-5 h-5 rounded-full bg-[#7c3aed] flex items-center justify-center">
+                                <span className="text-[10px] font-bold text-white">{chat.unread_count}</span>
+                            </div>
+                        )}
+                    </div>
                   </div>
                   
                   <div className="flex justify-between items-center gap-2">

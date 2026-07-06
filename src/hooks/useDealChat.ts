@@ -83,9 +83,9 @@ export function useDealChat(orderId: string | undefined, currentUserId: string |
     if (!content.trim() || !orderId || !currentUserId) return;
 
     // Optimistic update
-    const tempId = `temp-${Date.now()}`;
+    const messageId = crypto.randomUUID();
     const optimisticMessage: DealMessage = {
-      id: tempId,
+      id: messageId,
       order_id: orderId,
       sender_id: currentUserId,
       sender_type: 'user',
@@ -102,6 +102,7 @@ export function useDealChat(orderId: string | undefined, currentUserId: string |
       .from('messages')
       .insert([
         {
+          id: messageId,
           order_id: orderId,
           sender_id: currentUserId,
           sender_type: 'user',

@@ -38,6 +38,7 @@ export default function BuyerConfirmation() {
   }, [id]);
 
   const handleReleaseFunds = async () => {
+    if (isSubmitting) return;
     if (!checklist.description || !checklist.condition || !checklist.authenticity) {
       toast.error("Please complete the checklist to proceed");
       return;

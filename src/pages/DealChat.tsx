@@ -51,6 +51,20 @@ export default function DealChat() {
     init();
   }, [id, navigate]);
 
+  // Mark as read when messages change
+  useEffect(() => {
+    if (!order || !currentUser || messages.length === 0) return;
+    
+    const isVendor = currentUser.id === order.vendor_id;
+    const updateColumn = isVendor ? 'vendor_last_read_at' : 'buyer_last_read_at';
+
+    supabase.from('orders').update({
+      [updateColumn]: new Date().toISOString()
+    }).eq('id', order.id).then(({ error }) => {
+      if (error) console.error("Failed to update read receipt", error);
+    });
+  }, [messages.length, order, currentUser]);
+
   const handleSend = (e: React.FormEvent) => {
     e.preventDefault();
     if (!inputText.trim()) return;

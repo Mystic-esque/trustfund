@@ -12,6 +12,7 @@ export interface InboxChat {
   latest_message_time: string | null;
   latest_message_sender_id: string | null;
   latest_message_sender_type: string | null;
+  unread_count: number;
 }
 
 export function useInbox() {
@@ -35,6 +36,7 @@ export function useInbox() {
         .from('orders')
         .select(`
           id, item_name, status, amount, vendor_id, buyer_id,
+          vendor_last_read_at, buyer_last_read_at,
           vendor:users!orders_vendor_id_fkey(id, full_name, avatar_url),
           buyer:users!orders_buyer_id_fkey(id, full_name, avatar_url)
         `)
@@ -74,6 +76,14 @@ export function useInbox() {
         const isVendor = user.id === order.vendor_id;
         const otherParty: any = isVendor ? order.buyer : order.vendor;
         const latestMsg = latestMessagesMap[order.id];
+        const lastReadAt = isVendor ? order.vendor_last_read_at : order.buyer_last_read_at;
+
+        let unreadCount = 0;
+        if (messagesData) {
+          unreadCount = messagesData.filter(
+            (m) => m.order_id === order.id && m.sender_id !== user.id && (!lastReadAt || new Date(m.created_at) > new Date(lastReadAt))
+          ).length;
+        }
 
         return {
           order_id: order.id,
@@ -86,6 +96,7 @@ export function useInbox() {
           latest_message_time: latestMsg ? latestMsg.created_at : null,
           latest_message_sender_id: latestMsg ? latestMsg.sender_id : null,
           latest_message_sender_type: latestMsg ? latestMsg.sender_type : null,
+          unread_count: unreadCount,
         };
       });
 
