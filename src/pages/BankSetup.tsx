@@ -80,18 +80,21 @@ export default function BankSetup() {
     }
   };
 
-  const handleSaveClick = () => {
+  const handleSaveClick = async () => {
     if (!verifiedName || !selectedBankCode || !accountNumber) return;
     
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
     // Check if user has PIN setup
-    supabase.from('users').select('payment_pin').single().then(({data}) => {
-      if (!data?.payment_pin) {
-        toast('Please set up your payment PIN first', { icon: '🔒' });
-        navigate(`/payment-settings/pin-setup`);
-        return;
-      }
-      setShowPinModal(true);
-    });
+    const { data } = await supabase.from('users').select('payment_pin').eq('id', user.id).single();
+    
+    if (!data?.payment_pin) {
+      toast('Please set up your payment PIN first', { icon: '🔒' });
+      navigate(`/settings/pin-setup?redirect=${redirect || 'bank-setup'}`);
+      return;
+    }
+    setShowPinModal(true);
   };
 
   const executeSave = async (finalPin: string) => {
@@ -166,7 +169,13 @@ export default function BankSetup() {
       <header className="sticky top-0 w-full z-50 backdrop-blur-[40px] bg-[#101415]/80 border-b border-white/5">
         <div className="flex items-center px-5 h-16 w-full max-w-[600px] mx-auto gap-4">
           <button 
-            onClick={() => navigate(-1)}
+            onClick={() => {
+              if (redirect === 'withdraw') {
+                navigate('/withdraw/amount');
+              } else {
+                navigate(-1);
+              }
+            }}
             className="material-symbols-outlined text-[#cfc2d6] hover:bg-[#323537] transition-colors p-2 rounded-full active:scale-95 duration-100 -ml-2"
           >
             arrow_back

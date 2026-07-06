@@ -40,6 +40,29 @@ const LockFunds = () => {
     };
 
     fetchContext();
+
+    // Subscribe to realtime balance updates
+    let subscription: any = null;
+    
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (user) {
+        subscription = supabase.channel(`lock_funds_${user.id}`)
+          .on(
+            'postgres_changes',
+            { event: 'UPDATE', schema: 'public', table: 'users', filter: `id=eq.${user.id}` },
+            (payload) => {
+              if (payload.new) {
+                setUserData(payload.new);
+              }
+            }
+          )
+          .subscribe();
+      }
+    });
+
+    return () => {
+      if (subscription) supabase.removeChannel(subscription);
+    };
   }, [id, navigate]);
 
   const executeLock = async (finalPin: string) => {
@@ -93,7 +116,7 @@ const LockFunds = () => {
   const handleInitialLockClick = () => {
     if (!userData.payment_pin) {
       toast('Please set up your payment PIN first', { icon: '🔒' });
-      navigate(`/payment-settings/pin-setup`);
+      navigate(`/settings/pin-setup?redirect=lock&orderId=${id}`);
       return;
     }
     setShowPinModal(true);

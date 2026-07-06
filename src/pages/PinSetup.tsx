@@ -73,7 +73,12 @@ export default function PinSetup() {
       toast.success('Payment PIN set successfully!');
       
       if (redirect === 'withdraw') {
-        navigate(`/withdraw/summary?amount=${amount}`);
+        navigate(`/withdraw/summary?amount=${amount}`); // Redirect to withdraw summary with amount
+      } else if (redirect === 'lock') {
+        const orderId = searchParams.get('orderId');
+        navigate(`/orders/${orderId}/lock`);
+      } else if (redirect === 'bank-setup') {
+        navigate('/bank-setup');
       } else {
         navigate(-1);
       }
