@@ -6,7 +6,7 @@ const BottomNav = () => {
   const currentPath = location.pathname;
   const { chats } = useInbox();
 
-  const unreadCount = chats.reduce((acc, chat) => acc + chat.unread_count, 0);
+  const hasUnread = chats.some(chat => chat.has_unread);
 
   return (
     <div className="fixed bottom-6 left-1/2 -translate-x-1/2 w-[90%] max-w-[400px] z-50">
@@ -33,10 +33,8 @@ const BottomNav = () => {
         <Link to="/messages" className={`relative flex flex-col items-center justify-center px-3 transition-transform active:scale-90 ${currentPath === '/messages' ? 'text-primary' : 'text-white/60 hover:text-white'}`}>
           <div className="relative">
             <span className="material-symbols-outlined" style={{ fontVariationSettings: currentPath === '/messages' ? "'FILL' 1" : "'FILL' 0" }}>chat_bubble</span>
-            {unreadCount > 0 && (
-              <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-error rounded-full border-2 border-[#101415] flex items-center justify-center">
-                <span className="text-[8px] font-bold text-white">{unreadCount > 9 ? '9+' : unreadCount}</span>
-              </span>
+            {hasUnread && (
+              <span className="absolute top-0 right-0 w-2.5 h-2.5 bg-error rounded-full border border-[#101415] shadow-[0_0_8px_rgba(255,84,73,0.6)]"></span>
             )}
           </div>
           <span className="font-label-sm text-[10px] mt-0.5">Chat</span>

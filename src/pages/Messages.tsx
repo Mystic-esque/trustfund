@@ -150,9 +150,9 @@ export default function Messages() {
                 onClick={() => navigate(`/orders/${chat.order_id}/chat`)}
                 className="bg-[rgba(32,31,31,0.6)] backdrop-blur-xl border border-[#4a4455]/30 rounded-2xl p-4 flex gap-4 items-center cursor-pointer hover:bg-[#353534]/50 transition-colors relative group active:scale-[0.98]"
               >
-                {/* Unread Indicator Pill (Placeholder logic for active deals) */}
-                {(chat.status === 'ESCROW_LOCKED' || chat.status === 'IN_TRANSIT') && (
-                  <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-[#d2bbff] rounded-r-full"></div>
+                {/* Unread Indicator Pill */}
+                {chat.has_unread && (
+                  <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-[#7c3aed] rounded-r-full shadow-[0_0_8px_rgba(124,58,237,0.6)]"></div>
                 )}
                 
                 <div className="relative shrink-0">
@@ -176,10 +176,8 @@ export default function Messages() {
                     <h3 className="font-label-lg text-[15px] text-[#e5e2e1] font-bold truncate pr-2">{chat.other_party_name}</h3>
                     <div className="flex items-center gap-2 shrink-0">
                         <span className="font-label-sm text-[11px] text-[#ccc3d8]">{formatTime(chat.latest_message_time)}</span>
-                        {chat.unread_count > 0 && (
-                            <div className="w-5 h-5 rounded-full bg-[#7c3aed] flex items-center justify-center">
-                                <span className="text-[10px] font-bold text-white">{chat.unread_count}</span>
-                            </div>
+                        {chat.has_unread && (
+                            <div className="w-2.5 h-2.5 rounded-full bg-[#7c3aed] shadow-[0_0_8px_rgba(124,58,237,0.6)]"></div>
                         )}
                     </div>
                   </div>

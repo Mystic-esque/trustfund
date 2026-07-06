@@ -12,7 +12,7 @@ export interface InboxChat {
   latest_message_time: string | null;
   latest_message_sender_id: string | null;
   latest_message_sender_type: string | null;
-  unread_count: number;
+  has_unread: boolean;
 }
 
 export function useInbox() {
@@ -74,7 +74,6 @@ export function useInbox() {
               latestMessagesMap[msg.order_id] = msg;
             }
           });
-          allMessages = messagesData;
         }
       }
 
@@ -84,11 +83,9 @@ export function useInbox() {
         const latestMsg = latestMessagesMap[order.id];
         const lastReadAt = isVendor ? order.vendor_last_read_at : order.buyer_last_read_at;
 
-        let unreadCount = 0;
-        if (allMessages.length > 0) {
-          unreadCount = allMessages.filter(
-            (m: any) => m.order_id === order.id && m.sender_id !== user.id && (!lastReadAt || new Date(m.created_at) > new Date(lastReadAt))
-          ).length;
+        let hasUnread = false;
+        if (latestMsg && latestMsg.sender_id !== user.id) {
+          hasUnread = !lastReadAt || new Date(latestMsg.created_at) > new Date(lastReadAt);
         }
 
         return {
@@ -102,7 +99,7 @@ export function useInbox() {
           latest_message_time: latestMsg ? latestMsg.created_at : null,
           latest_message_sender_id: latestMsg ? latestMsg.sender_id : null,
           latest_message_sender_type: latestMsg ? latestMsg.sender_type : null,
-          unread_count: unreadCount,
+          has_unread: hasUnread,
         };
       });
 
@@ -140,9 +137,9 @@ export function useInbox() {
                   latest_message_time: newMsg.created_at,
                   latest_message_sender_id: newMsg.sender_id,
                   latest_message_sender_type: newMsg.sender_type,
-                  unread_count: (newMsg.sender_id && userRef.current && newMsg.sender_id !== userRef.current.id) 
-                                ? chat.unread_count + 1 
-                                : chat.unread_count,
+                  has_unread: (newMsg.sender_id && userRef.current && newMsg.sender_id !== userRef.current.id) 
+                                ? true 
+                                : chat.has_unread,
                 };
               }
               return chat;
