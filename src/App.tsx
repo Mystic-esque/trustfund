@@ -37,6 +37,7 @@ import WithdrawPin from './pages/WithdrawPin';
 import WithdrawSuccess from './pages/WithdrawSuccess';
 import EscrowReceipt from './pages/EscrowReceipt';
 import SimpleReceipt from './pages/SimpleReceipt';
+import AdminDisputes from './pages/AdminDisputes';
 
 
 
@@ -96,6 +97,7 @@ function App() {
         <Route path="/withdraw/summary" element={<ProtectedRoute><WithdrawSummary /></ProtectedRoute>} />
         <Route path="/withdraw/pin" element={<ProtectedRoute><WithdrawPin /></ProtectedRoute>} />
         <Route path="/withdraw/success" element={<ProtectedRoute><WithdrawSuccess /></ProtectedRoute>} />
+        <Route path="/admin/disputes" element={<ProtectedRoute><AdminDisputes /></ProtectedRoute>} />
         
         {/* Fallback */}
         <Route path="*" element={<Navigate to="/" replace />} />

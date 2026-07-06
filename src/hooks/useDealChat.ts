@@ -12,7 +12,7 @@ export interface DealMessage {
   created_at: string;
 }
 
-export function useDealChat(orderId: string | undefined, currentUserId: string | undefined) {
+export function useDealChat(orderId: string | undefined, currentUserId: string | undefined, isAdmin: boolean = false) {
   const [messages, setMessages] = useState<DealMessage[]>([]);
   const [loading, setLoading] = useState(true);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -95,7 +95,7 @@ export function useDealChat(orderId: string | undefined, currentUserId: string |
       id: messageId,
       order_id: orderId,
       sender_id: currentUserId,
-      sender_type: 'user',
+      sender_type: isAdmin ? 'system' : 'user',
       content,
       message_type: 'text',
       metadata: null,
@@ -112,7 +112,7 @@ export function useDealChat(orderId: string | undefined, currentUserId: string |
           id: messageId,
           order_id: orderId,
           sender_id: currentUserId,
-          sender_type: 'user',
+          sender_type: isAdmin ? 'system' : 'user',
           content,
           message_type: 'text',
         },

@@ -10,8 +10,10 @@ export default function DealChat() {
   const [order, setOrder] = useState<any>(null);
   const [otherParty, setOtherParty] = useState<any>(null);
   const [inputText, setInputText] = useState('');
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [isResolving, setIsResolving] = useState(false);
 
-  const { messages, loading: messagesLoading, sendMessage, scrollRef } = useDealChat(id, currentUser?.id);
+  const { messages, loading: messagesLoading, sendMessage, scrollRef } = useDealChat(id, currentUser?.id, isAdmin);
 
   useEffect(() => {
     const init = async () => {
@@ -21,6 +23,10 @@ export default function DealChat() {
         return;
       }
       setCurrentUser(user);
+      
+      const adminEmails = ['mysticx404@gmail.com', 'admin@trustfund.com'];
+      const isAdminUser = adminEmails.includes(user.email || '');
+      setIsAdmin(isAdminUser);
 
       // Fetch order details
       const { data: orderData, error: orderError } = await supabase
@@ -72,6 +78,33 @@ export default function DealChat() {
     setInputText('');
   };
 
+  const handleResolution = async (resolution: 'refund' | 'settle') => {
+    if (!order) return;
+    setIsResolving(true);
+    try {
+      const { error } = await supabase.rpc('resolve_dispute', {
+        p_order_id: order.id,
+        p_resolution: resolution
+      });
+      if (error) throw error;
+      
+      // Add a system message
+      await supabase.from('messages').insert([{
+        order_id: order.id,
+        sender_type: 'system',
+        content: `Dispute Resolved: ${resolution === 'refund' ? 'Buyer Refunded' : 'Vendor Settled'}`,
+        message_type: 'status_update'
+      }]);
+
+      setOrder({ ...order, status: resolution === 'refund' ? 'REFUNDED' : 'SETTLED' });
+    } catch (e: any) {
+      console.error(e);
+      alert(e.message || 'Failed to resolve dispute');
+    } finally {
+      setIsResolving(false);
+    }
+  };
+
   const getStatusDisplay = (status: string) => {
     switch (status) {
       case 'PENDING_PAYMENT': return { text: 'Awaiting Payment', bg: 'bg-[#353534]', color: 'text-outline-variant', dot: 'bg-outline-variant' };
@@ -98,52 +131,45 @@ export default function DealChat() {
   return (
     <div className="bg-[#131313] text-[#e5e2e1] flex flex-col min-h-[100dvh] font-body-md relative max-w-[600px] mx-auto overflow-hidden">
       
-      {/* TopAppBar */}
-      <header className="w-full sticky top-0 z-50 bg-[#131313] border-b border-[#4a4455]/30 flex items-center justify-between px-5 h-16 shrink-0">
-        <div className="flex items-center gap-4">
-          <button onClick={() => navigate(-1)} className="active:scale-95 duration-150 p-2 -ml-2 rounded-full hover:bg-[#353534] transition-colors">
-            <span className="material-symbols-outlined text-[#d2bbff]">arrow_back</span>
-          </button>
-          <div>
-            <h1 className="font-headline-md text-lg text-[#e5e2e1] leading-tight font-bold">
-              {otherParty ? otherParty.full_name : 'No Buyer Yet'}
-            </h1>
-            <p className="font-label-sm text-xs text-[#ccc3d8]">Case #{order.reference_id}</p>
-          </div>
-        </div>
-        <button onClick={() => navigate(`/orders/${order.id}`)} className="active:scale-95 duration-150 p-2 -mr-2 rounded-full hover:bg-[#353534] transition-colors">
-          <span className="material-symbols-outlined text-[#d2bbff]">info</span>
-        </button>
-      </header>
-
-      {/* Case Context Banner */}
-      <div className="px-5 py-3 bg-[#1c1b1b] border-b border-[#4a4455]/30 flex items-center justify-between shrink-0 shadow-sm z-40 relative">
+      {/* Header */}
+      <header className="flex-shrink-0 z-10 sticky top-0 bg-[#131313]/90 backdrop-blur-xl border-b border-[#4a4455]/30 flex items-center justify-between px-4 py-4">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-lg overflow-hidden bg-[#353534] border border-[#4a4455]">
-            <div className="w-full h-full flex items-center justify-center text-[#ccc3d8]">
-              <span className="material-symbols-outlined text-xl">inventory_2</span>
+          <button 
+            onClick={() => {
+              if (isAdmin) {
+                navigate('/admin/disputes');
+              } else {
+                navigate(`/orders/${order.id}`);
+              }
+            }}
+            className="w-10 h-10 flex items-center justify-center rounded-full bg-[#353534]/50 hover:bg-[#353534] transition-colors"
+          >
+            <span className="material-symbols-outlined text-[#e5e2e1]">arrow_back</span>
+          </button>
+          
+          <div className="flex flex-col">
+            <span className="font-title-md font-semibold text-[#e5e2e1] truncate max-w-[200px]">
+              {isAdmin ? `Dispute: ${order.item_name}` : (otherParty?.full_name || 'Buyer')}
+            </span>
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1">
+                <span className={`w-2 h-2 rounded-full ${statusDisplay.dot}`}></span>
+                <span className="font-label-sm text-[#ccc3d8] text-xs truncate max-w-[150px]">{order.item_name}</span>
+              </div>
             </div>
           </div>
-          <div>
-            <p className="font-label-sm text-[10px] uppercase tracking-wider text-[#ccc3d8]">Disputed Item</p>
-            <p className="font-label-lg text-sm text-[#e5e2e1] font-semibold truncate max-w-[150px]">{order.item_name}</p>
-          </div>
         </div>
-        <div className={`px-3 py-1 rounded-full flex items-center gap-1.5 shadow-sm ${statusDisplay.bg} ${statusDisplay.color}`}>
-          <span className={`w-1.5 h-1.5 rounded-full ${order.status === 'DISPUTED' || order.status === 'IN_TRANSIT' ? 'animate-pulse' : ''} ${statusDisplay.dot}`}></span>
-          <span className="font-label-sm text-[10px] uppercase tracking-wider font-bold">{statusDisplay.text}</span>
-        </div>
-      </div>
+        {isAdmin && <div className="text-[10px] font-bold text-error border border-error px-2 py-1 rounded">ADMIN</div>}
+      </header>
 
       {/* Chat Area */}
-      <main className="flex-1 overflow-y-auto px-5 py-6 flex flex-col gap-6 pb-24 relative z-0 hide-scrollbar">
+      <div className="flex-1 overflow-y-auto px-5 py-6 flex flex-col gap-6 pb-24 relative z-0 hide-scrollbar">
         {messagesLoading ? (
           <div className="flex items-center justify-center py-10">
             <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
           </div>
         ) : (
           messages.map((msg) => {
-            // System Message
             if (msg.sender_type === 'system') {
               return (
                 <div key={msg.id} className="flex flex-col items-center gap-2 my-2 w-full">
@@ -154,8 +180,6 @@ export default function DealChat() {
                 </div>
               );
             }
-
-            // Current User (Outgoing)
             if (msg.sender_id === currentUser.id) {
               return (
                 <div key={msg.id} className="flex flex-col gap-1 max-w-[85%] self-end items-end">
@@ -168,8 +192,6 @@ export default function DealChat() {
                 </div>
               );
             }
-
-            // Other Party (Incoming)
             return (
               <div key={msg.id} className="flex flex-col gap-1 max-w-[85%] self-start">
                 <div className="flex items-center gap-2 mb-1">
@@ -197,40 +219,62 @@ export default function DealChat() {
           })
         )}
         <div ref={scrollRef} />
-      </main>
-
-      {/* Input Area */}
-      <div className="fixed bottom-0 w-full max-w-[600px] bg-[#131313]/90 backdrop-blur-xl border-t border-[#4a4455]/30 px-5 py-4 pb-8 z-50">
-        <form onSubmit={handleSend} className="flex items-end gap-3">
-          <button type="button" className="p-3 bg-[#353534]/50 text-[#ccc3d8] rounded-xl hover:bg-[#353534] transition-colors border border-[#4a4455]/30 shrink-0">
-            <span className="material-symbols-outlined text-[20px]">attach_file</span>
-          </button>
-          <div className="flex-1 relative">
-            <textarea
-              rows={1}
-              value={inputText}
-              onChange={(e) => setInputText(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                  e.preventDefault();
-                  handleSend(e);
-                }
-              }}
-              placeholder="Type your message..."
-              className="w-full bg-[#1c1b1b] border border-[#4a4455]/50 rounded-2xl py-3 px-4 pr-12 text-[#e5e2e1] focus:outline-none focus:border-[#d2bbff] focus:ring-1 focus:ring-[#d2bbff] resize-none overflow-hidden placeholder-[#ccc3d8]/50"
-              style={{ minHeight: '48px', maxHeight: '120px' }}
-            />
-            <button
-              type="submit"
-              disabled={!inputText.trim() || messagesLoading}
-              className="absolute right-2 bottom-2 p-2 bg-[#7c3aed] text-white rounded-xl disabled:opacity-50 disabled:bg-[#353534] disabled:text-[#ccc3d8] transition-all"
-            >
-              <span className="material-symbols-outlined text-[18px]">send</span>
-            </button>
-          </div>
-        </form>
       </div>
 
+      {/* Admin Resolution Area */}
+      {isAdmin && order.status === 'DISPUTED' && (
+        <div className="p-4 bg-error-container/10 border-t border-error/20 flex flex-col gap-3">
+          <div className="text-sm text-error/80 font-bold mb-1">Mediator Actions</div>
+          <div className="flex gap-3">
+            <button
+              onClick={() => handleResolution('refund')}
+              disabled={isResolving}
+              className="flex-1 py-3 rounded-full bg-error text-white font-bold text-sm disabled:opacity-50 active:scale-95 transition-all"
+            >
+              {isResolving ? 'Resolving...' : 'Refund Buyer'}
+            </button>
+            <button
+              onClick={() => handleResolution('settle')}
+              disabled={isResolving}
+              className="flex-1 py-3 rounded-full bg-primary text-white font-bold text-sm disabled:opacity-50 active:scale-95 transition-all"
+            >
+              {isResolving ? 'Resolving...' : 'Settle Vendor'}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Chat Input */}
+      {(!isAdmin || order.status === 'DISPUTED') && (
+        <footer className="flex-shrink-0 z-10 sticky bottom-0 bg-[#131313]/90 backdrop-blur-xl border-t border-[#4a4455]/30 p-4 pb-8">
+          <form onSubmit={handleSend} className="flex items-end gap-3 max-w-[600px] mx-auto">
+            <div className="flex-1 min-h-[48px] max-h-[120px] bg-[#353534]/50 rounded-2xl border border-[#4a4455]/30 focus-within:border-primary focus-within:bg-[#353534]/80 transition-all flex items-end">
+              <textarea
+                value={inputText}
+                onChange={(e) => setInputText(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    handleSend(e);
+                  }
+                }}
+                placeholder={isAdmin ? "Type an admin message..." : "Type a message..."}
+                className="w-full bg-transparent text-[#e5e2e1] placeholder-[#ccc3d8]/50 px-4 py-3 outline-none resize-none min-h-[48px] max-h-[120px]"
+                rows={1}
+                disabled={messagesLoading}
+              />
+            </div>
+            
+            <button 
+              type="submit"
+              disabled={!inputText.trim() || messagesLoading}
+              className="w-12 h-12 flex-shrink-0 flex items-center justify-center rounded-full bg-primary text-white disabled:bg-[#353534] disabled:text-[#ccc3d8]/50 transition-all active:scale-95 disabled:active:scale-100"
+            >
+              <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 1" }}>send</span>
+            </button>
+          </form>
+        </footer>
+      )}
     </div>
   );
 }

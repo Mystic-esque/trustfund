@@ -151,7 +151,6 @@ export function useInbox() {
               return timeB - timeA;
             });
           });
-          });
         }
       )
       .on(
