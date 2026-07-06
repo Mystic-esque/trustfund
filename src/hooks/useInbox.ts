@@ -123,7 +123,7 @@ export function useInbox() {
 
     // Subscribe to any new message
     const subscription = supabase
-      .channel('inbox_messages')
+      .channel(`inbox_messages_${Math.random()}`)
       .on(
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'messages' },
