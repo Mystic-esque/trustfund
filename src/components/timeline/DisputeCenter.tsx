@@ -48,7 +48,7 @@ const DisputeCenter: React.FC<DisputeCenterProps> = ({ order, currentUser }) => 
       window.location.reload();
     } catch (err: any) {
       console.error("Cancel failed:", err);
-      alert(err.message || 'Failed to cancel dispute');
+      alert('Failed to withdraw dispute. Please try again later or contact support.');
     } finally {
       setCancelling(false);
     }

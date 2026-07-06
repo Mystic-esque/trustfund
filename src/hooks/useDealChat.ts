@@ -95,15 +95,28 @@ export function useDealChat(orderId: string | undefined, currentUserId: string |
       id: messageId,
       order_id: orderId,
       sender_id: currentUserId,
-      sender_type: isAdmin ? 'system' : 'user',
+      sender_type: 'user',
       content,
-      message_type: 'text',
+      message_type: isAdmin ? 'admin_text' : 'text',
       metadata: null,
       created_at: new Date().toISOString(),
     };
 
     setMessages((prev) => [...prev, optimisticMessage]);
     scrollToBottom();
+
+    // If admin, use the RPC to bypass RLS
+    if (isAdmin) {
+      const { error } = await supabase.rpc('send_admin_message', {
+        p_order_id: orderId,
+        p_content: content
+      });
+      if (error) {
+        setMessages((prev) => prev.filter((m) => m.id !== messageId));
+        console.error('Error sending admin message:', error);
+      }
+      return;
+    }
 
     const { error } = await supabase
       .from('messages')
@@ -112,7 +125,7 @@ export function useDealChat(orderId: string | undefined, currentUserId: string |
           id: messageId,
           order_id: orderId,
           sender_id: currentUserId,
-          sender_type: isAdmin ? 'system' : 'user',
+          sender_type: 'user',
           content,
           message_type: 'text',
         },

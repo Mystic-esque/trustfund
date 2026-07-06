@@ -113,7 +113,7 @@ export default function DealChat() {
       setOrder({ ...order, status: resolution === 'refund' ? 'REFUNDED' : 'SETTLED' });
     } catch (e: any) {
       console.error(e);
-      alert(e.message || 'Failed to resolve dispute');
+      alert('Failed to resolve dispute. Please try again later or contact support.');
     } finally {
       setIsResolving(false);
     }
@@ -212,21 +212,37 @@ export default function DealChat() {
             return (
               <div key={msg.id} className="flex flex-col gap-1 max-w-[85%] self-start">
                 <div className="flex items-center gap-2 mb-1">
-                  <div className="w-6 h-6 rounded-full overflow-hidden bg-[#353534]">
-                    {otherParty?.avatar_url ? (
-                      <img src={otherParty.avatar_url} alt="avatar" className="w-full h-full object-cover" />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center bg-primary text-white text-xs font-bold">
-                        {otherParty?.full_name?.charAt(0) || '?'}
+                  {msg.message_type === 'admin_text' ? (
+                    <>
+                      <div className="w-6 h-6 rounded-full overflow-hidden bg-[#93000a] flex items-center justify-center text-[#ffb4ab] font-bold border border-[#ffb4ab]/30">
+                        <span className="material-symbols-outlined text-[14px]">shield_person</span>
                       </div>
-                    )}
-                  </div>
-                  <span className="font-label-sm text-xs text-[#d2bbff] font-bold">
-                    {otherParty?.full_name?.split(' ')[0] || 'User'} 
-                    <span className="font-normal text-[#ccc3d8] ml-1 opacity-70">
-                      {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                    </span>
-                  </span>
+                      <span className="font-label-sm text-xs text-[#ffb4ab] font-bold tracking-wider">
+                        ADMIN
+                        <span className="font-normal text-[#ccc3d8] ml-2 opacity-70 tracking-normal">
+                          {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </span>
+                      </span>
+                    </>
+                  ) : (
+                    <>
+                      <div className="w-6 h-6 rounded-full overflow-hidden bg-[#353534]">
+                        {otherParty?.avatar_url ? (
+                          <img src={otherParty.avatar_url} alt="avatar" className="w-full h-full object-cover" />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center bg-primary text-white text-xs font-bold">
+                            {otherParty?.full_name?.charAt(0) || '?'}
+                          </div>
+                        )}
+                      </div>
+                      <span className="font-label-sm text-xs text-[#d2bbff] font-bold">
+                        {otherParty?.full_name?.split(' ')[0] || 'User'} 
+                        <span className="font-normal text-[#ccc3d8] ml-1 opacity-70">
+                          {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </span>
+                      </span>
+                    </>
+                  )}
                 </div>
                 <div className="bg-[rgba(32,31,31,0.8)] backdrop-blur-md border border-[#4a4455]/30 p-4 rounded-2xl rounded-tl-sm shadow-sm ml-8">
                   <p className="font-body-md text-[15px] text-[#e5e2e1] leading-relaxed break-words">{msg.content}</p>
