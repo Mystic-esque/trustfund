@@ -160,6 +160,10 @@ const PublicOrderSummary = () => {
               <div>
                 <span className="text-[12px] font-semibold text-[#ddb7ff] uppercase tracking-widest bg-[#ddb7ff]/10 px-3 py-1 rounded-full">{order.category}</span>
                 <h2 className="text-[32px] font-semibold text-[#e0e3e5] mt-4">{order.title}</h2>
+                <div className="mt-3 inline-flex items-center gap-1.5 bg-white/5 px-3 py-1.5 rounded-lg border border-white/10">
+                  <span className="material-symbols-outlined text-[16px] text-[#cfc2d6]">local_shipping</span>
+                  <span className="text-[14px] text-[#e0e3e5] font-medium">Delivery in {order.deliveryWindow} days</span>
+                </div>
               </div>
               <div className="flex items-center justify-center md:justify-start gap-4">
                 <div className="w-10 h-10 rounded-full overflow-hidden border border-white/10">
@@ -205,10 +209,6 @@ const PublicOrderSummary = () => {
               <p className="text-[12px] text-[#cfc2d6] opacity-50 mt-1">Member since {order.memberSince}</p>
             </div>
             <div className="flex gap-8 w-full md:w-auto overflow-x-auto pb-2">
-              <div className="text-center min-w-[100px]">
-                <p className="text-[12px] text-[#cfc2d6] opacity-60 uppercase mb-1">Delivery Window</p>
-                <p className="text-[20px] font-medium text-[#ddb7ff]">{order.deliveryWindow}</p>
-              </div>
               <div className="text-center min-w-[100px]">
                 <p className="text-[12px] text-[#cfc2d6] opacity-60 uppercase mb-1">Completed Deals</p>
                 <p className="text-[20px] font-medium text-[#e0e3e5]">{order.escrowDeals}</p>
