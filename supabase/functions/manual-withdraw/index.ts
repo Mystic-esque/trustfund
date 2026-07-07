@@ -104,7 +104,7 @@ serve(async (req) => {
     const parentAccountId = Deno.env.get("NOMBA_PARENT_ACCOUNT_ID")!;
     const idempotencyKey = crypto.randomUUID();
 
-    const transferRes = await fetch(`${baseUrl.replace('/v1', '/v2')}/transfers/bank/${subAccountId}`, {
+    const transferRes = await fetch(`${baseUrl.replace('/v1', '/v2')}/transfers/bank/${parentAccountId}`, {
       method: "POST",
       headers: {
         "Authorization": `Bearer ${token}`,
