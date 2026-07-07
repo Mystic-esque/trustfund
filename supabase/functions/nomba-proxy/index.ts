@@ -61,6 +61,19 @@ serve(async (req) => {
       return new Response(JSON.stringify(data), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
+    
+    if (action === "balance") {
+      const res = await fetch(`${baseUrl}/accounts/accounts`, {
+        method: "GET",
+        headers: {
+          "Authorization": `Bearer ${token}`,
+          "accountId": parentAccountId,
+        }
+      });
+      const data = await res.json();
+      return new Response(JSON.stringify(data), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
     if (action === "lookup") {
       const res = await fetch(`${baseUrl}/transfers/bank/lookup`, {
         method: "POST",
