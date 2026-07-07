@@ -829,3 +829,9 @@ LEFT JOIN public.public_profiles b ON o.buyer_id = b.id;
 -- 4. Grant Select access to the views
 GRANT SELECT ON public.public_profiles TO anon, authenticated;
 GRANT SELECT ON public.order_details_view TO anon, authenticated;
+-- 5. Fix Ledger Entry Type Enum (missing SETTLEMENT_INTERNAL)
+DO $$ BEGIN
+    ALTER TYPE ledger_entry_type ADD VALUE IF NOT EXISTS 'SETTLEMENT_INTERNAL';
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
