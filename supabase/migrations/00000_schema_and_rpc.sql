@@ -1,191 +1,191 @@
 -- INITIAL SCHEMA DEFINITIONS
 
-4.1 Users Table**
+-- 4.1 Users Table
 
    
 create table public.users (  
   id uuid primary key references auth.users(id) on delete cascade,  
-  full\_name text not null,  
+  full_name text not null,  
   phone text unique not null,  
   username text unique,  
-  avatar\_url text,  
-  \-- Payout bank details (verified via Nomba bank lookup)  
-  bank\_name text,  
-  bank\_code text,  
-  bank\_account\_number text,  
-  bank\_account\_name text,  	\-- verified name from Nomba lookup  
-  \-- Nomba virtual wallet account  
-  nomba\_virtual\_account\_number text unique,  \-- the NUBAN  
-  nomba\_account\_ref text unique,         	\-- \= user id (our join key)  
-  nomba\_bank\_name text,                  	\-- e.g. "Nomba MFB"  
-  account\_provisioning\_status text default 'pending',  \-- pending | active | failed  
-  \-- Three wallet balances  
-  available\_balance numeric(12,2) default 0.00,  
-  escrow\_balance	numeric(12,2) default 0.00,  
-  pending\_balance   numeric(12,2) default 0.00,  
-  \-- Stats  
-  completed\_deals\_count integer default 0,  
-  created\_at timestamptz default now(),  
-  updated\_at timestamptz default now()  
+  avatar_url text,  
+  -- Payout bank details (verified via Nomba bank lookup)  
+  bank_name text,  
+  bank_code text,  
+  bank_account_number text,  
+  bank_account_name text,  	-- verified name from Nomba lookup  
+  -- Nomba virtual wallet account  
+  nomba_virtual_account_number text unique,  -- the NUBAN  
+  nomba_account_ref text unique,         	-- = user id (our join key)  
+  nomba_bank_name text,                  	-- e.g. "Nomba MFB"  
+  account_provisioning_status text default 'pending',  -- pending | active | failed  
+  -- Three wallet balances  
+  available_balance numeric(12,2) default 0.00,  
+  escrow_balance	numeric(12,2) default 0.00,  
+  pending_balance   numeric(12,2) default 0.00,  
+  -- Stats  
+  completed_deals_count integer default 0,  
+  created_at timestamptz default now(),  
+  updated_at timestamptz default now()  
 );  
 alter table public.users enable row level security;  
 create policy "Users can view own profile" on public.users  
-  for select using (auth.uid() \= id);  
+  for select using (auth.uid() = id);  
 create policy "Users can update own profile" on public.users  
-  for update using (auth.uid() \= id);  
+  for update using (auth.uid() = id);  
  
 
-**4.2 Orders Table**
+-- 4.2 Orders Table
 
    
-create type order\_status as enum (  
-'PENDING\_PAYMENT', 'ESCROW\_LOCKED', 'IN\_TRANSIT',  
-'DELIVERED\_PENDING\_RELEASE', 'SETTLING', 'SETTLED',  
+create type order_status as enum (  
+'PENDING_PAYMENT', 'ESCROW_LOCKED', 'IN_TRANSIT',  
+'DELIVERED_PENDING_RELEASE', 'SETTLING', 'SETTLED',  
 'DISPUTED', 'REFUNDED', 'EXPIRED'  
 );  
 create table public.orders (  
-  id uuid primary key default gen\_random\_uuid(),  
-  link\_slug text unique not null,    	\-- 6-char random slug for deal URL  
-  reference\_id text unique not null, 	\-- TF-{year}-{slug} for receipts  
-  \-- Parties  
-  vendor\_id uuid references public.users(id) not null,  
-  buyer\_id  uuid references public.users(id),   \-- null until fund lock  
-  \-- Deal details  
-  item\_name text not null,  
-  item\_description text,  
-  amount numeric(12,2) not null,      	\-- naira decimal  
-  platform\_fee numeric(12,2),         	\-- amount \* 0.015  
-  net\_payout   numeric(12,2),	         \-- amount \- platform\_fee  
-  delivery\_window text,               	\-- "24hrs" | "48hrs" | "3-5 days" | custom  
-  \-- Status  
-  status order\_status default 'PENDING\_PAYMENT' not null,  
-  \-- State timestamps  
-  escrow\_locked\_at timestamptz,  
-  shipped\_at timestamptz,  
-  delivered\_at timestamptz,  
-  auto\_release\_at timestamptz,        	\-- delivered\_at \+ 48 hours  
-  settled\_at timestamptz,  
-  disputed\_at timestamptz,  
-  \-- Shipping  
-  tracking\_reference text,  
-  \-- Settlement tracking  
-  settlement\_tx\_ref text,             	\-- merchantTxRef for payout  
-  settlement\_nomba\_id text,  
-  settlement\_attempts integer default 0,  
-  \-- Link expiry  
-  expires\_at timestamptz default now() \+ interval '72 hours',  
-  created\_at timestamptz default now(),  
-  updated\_at timestamptz default now()  
+  id uuid primary key default gen_random_uuid(),  
+  link_slug text unique not null,    	-- 6-char random slug for deal URL  
+  reference_id text unique not null, 	-- TF-{year}-{slug} for receipts  
+  -- Parties  
+  vendor_id uuid references public.users(id) not null,  
+  buyer_id  uuid references public.users(id),   -- null until fund lock  
+  -- Deal details  
+  item_name text not null,  
+  item_description text,  
+  amount numeric(12,2) not null,      	-- naira decimal  
+  platform_fee numeric(12,2),         	-- amount \* 0.015  
+  net_payout   numeric(12,2),	         -- amount \- platform_fee  
+  delivery_window text,               	-- "24hrs" | "48hrs" | "3-5 days" | custom  
+  -- Status  
+  status order_status default 'PENDING_PAYMENT' not null,  
+  -- State timestamps  
+  escrow_locked_at timestamptz,  
+  shipped_at timestamptz,  
+  delivered_at timestamptz,  
+  auto_release_at timestamptz,        	-- delivered_at \+ 48 hours  
+  settled_at timestamptz,  
+  disputed_at timestamptz,  
+  -- Shipping  
+  tracking_reference text,  
+  -- Settlement tracking  
+  settlement_tx_ref text,             	-- merchantTxRef for payout  
+  settlement_nomba_id text,  
+  settlement_attempts integer default 0,  
+  -- Link expiry  
+  expires_at timestamptz default now() \+ interval '72 hours',  
+  created_at timestamptz default now(),  
+  updated_at timestamptz default now()  
 );  
 alter table public.orders enable row level security;  
 create policy "Vendor can view own orders" on public.orders  
-  for select using (auth.uid() \= vendor\_id);  
+  for select using (auth.uid() = vendor_id);  
 create policy "Buyer can view own orders" on public.orders  
-  for select using (auth.uid() \= buyer\_id);  
+  for select using (auth.uid() = buyer_id);  
 create policy "Authenticated users can create orders" on public.orders  
-  for insert with check (auth.uid() \= vendor\_id);  
+  for insert with check (auth.uid() = vendor_id);  
  
 
-**4.3 Ledger Entries Table (Immutable Audit Log)**
+-- 4.3 Ledger Entries Table (Immutable Audit Log)
 
    
-create type ledger\_entry\_type as enum (  
-'TOP\_UP', 'ESCROW\_LOCK', 'ESCROW\_UNLOCK',  
-'SETTLEMENT\_IN', 'SETTLEMENT\_OUT',  
-'WITHDRAWAL', 'REFUND', 'PLATFORM\_FEE'  
+create type ledger_entry_type as enum (  
+'TOP_UP', 'ESCROW_LOCK', 'ESCROW_UNLOCK',  
+'SETTLEMENT_IN', 'SETTLEMENT_OUT',  
+'WITHDRAWAL', 'REFUND', 'PLATFORM_FEE'  
 );  
-create type ledger\_entry\_status as enum ('SUCCESS', 'PENDING', 'FAILED');  
-create table public.ledger\_entries (  
-  id uuid primary key default gen\_random\_uuid(),  
-  user\_id  uuid references public.users(id) not null,  
-  order\_id uuid references public.orders(id),  \-- null for top-ups/withdrawals  
-  entry\_type ledger\_entry\_type not null,  
-  status ledger\_entry\_status default 'SUCCESS',  
-  amount numeric(12,2) not null,          	\-- always positive  
-  balance\_effect text not null,           	\-- 'available' | 'escrow' | 'pending'  
-  direction text not null,                	\-- 'credit' | 'debit'  
-  nomba\_transaction\_id text,  
-  nomba\_session\_id text,  
-  merchant\_tx\_ref text,  
-  sender\_name text,  
+create type ledger_entry_status as enum ('SUCCESS', 'PENDING', 'FAILED');  
+create table public.ledger_entries (  
+  id uuid primary key default gen_random_uuid(),  
+  user_id  uuid references public.users(id) not null,  
+  order_id uuid references public.orders(id),  -- null for top-ups/withdrawals  
+  entry_type ledger_entry_type not null,  
+  status ledger_entry_status default 'SUCCESS',  
+  amount numeric(12,2) not null,          	-- always positive  
+  balance_effect text not null,           	-- 'available' | 'escrow' | 'pending'  
+  direction text not null,                	-- 'credit' | 'debit'  
+  nomba_transaction_id text,  
+  nomba_session_id text,  
+  merchant_tx_ref text,  
+  sender_name text,  
   narration text,  
-  reference\_id text,  
-  created\_at timestamptz default now()  
+  reference_id text,  
+  created_at timestamptz default now()  
 );  
-alter table public.ledger\_entries enable row level security;  
-create policy "Users can view own ledger" on public.ledger\_entries  
-  for select using (auth.uid() \= user\_id);  
+alter table public.ledger_entries enable row level security;  
+create policy "Users can view own ledger" on public.ledger_entries  
+  for select using (auth.uid() = user_id);  
  
 
-**4.4 Webhook Events Table (Idempotency Store)**
+-- 4.4 Webhook Events Table (Idempotency Store)
 
    
-create table public.webhook\_events (  
-  id uuid primary key default gen\_random\_uuid(),  
-  request\_id text unique not null,	\-- Nomba requestId — idempotency key  
-  event\_type text not null,  
+create table public.webhook_events (  
+  id uuid primary key default gen_random_uuid(),  
+  request_id text unique not null,	-- Nomba requestId — idempotency key  
+  event_type text not null,  
   payload jsonb not null,  
   processed boolean default false,  
-  received\_at timestamptz not null,  
-  processed\_at timestamptz  
+  received_at timestamptz not null,  
+  processed_at timestamptz  
 );  
-alter table public.webhook\_events enable row level security;  
-\-- No user-facing RLS policy — service role only  
+alter table public.webhook_events enable row level security;  
+-- No user-facing RLS policy — service role only  
  
 
-**4.5 Messages Table (Deal Chat)**
+-- 4.5 Messages Table (Deal Chat)
 
    
-create type message\_sender\_type as enum ('user', 'system');  
+create type message_sender_type as enum ('user', 'system');  
 create table public.messages (  
-  id uuid primary key default gen\_random\_uuid(),  
-  order\_id uuid references public.orders(id) not null,  
-  sender\_id uuid references public.users(id),  \-- null for system messages  
-  sender\_type message\_sender\_type default 'user',  
+  id uuid primary key default gen_random_uuid(),  
+  order_id uuid references public.orders(id) not null,  
+  sender_id uuid references public.users(id),  -- null for system messages  
+  sender_type message_sender_type default 'user',  
   content text not null,  
-  message\_type text default 'text',  \-- 'text' | 'image' | 'status\_update'  
+  message_type text default 'text',  -- 'text' | 'image' | 'status_update'  
   metadata jsonb,  
-  created\_at timestamptz default now()  
+  created_at timestamptz default now()  
 );  
 alter table public.messages enable row level security;  
 create policy "Order parties can view messages" on public.messages  
   for select using (  
 	auth.uid() in (  
-  	select vendor\_id from public.orders where id \= order\_id  
+  	select vendor_id from public.orders where id = order_id  
   	union  
-  	select buyer\_id from public.orders where id \= order\_id  
+  	select buyer_id from public.orders where id = order_id  
 	)  
   );  
 create policy "Order parties can send messages" on public.messages  
   for insert with check (  
 	auth.uid() in (  
-  	select vendor\_id from public.orders where id \= order\_id  
+  	select vendor_id from public.orders where id = order_id  
   	union  
-  	select buyer\_id from public.orders where id \= order\_id  
+  	select buyer_id from public.orders where id = order_id  
 	)  
   );  
-alter publication supabase\_realtime add table public.messages;  
+alter publication supabase_realtime add table public.messages;  
  
 
-**4.6 Indexes**
+-- 4.6 Indexes
 
    
-create index idx\_orders\_slug     on public.orders(link\_slug);  
-create index idx\_orders\_vendor   on public.orders(vendor\_id);  
-create index idx\_orders\_buyer    on public.orders(buyer\_id);  
-create index idx\_orders\_status   on public.orders(status);  
-create index idx\_orders\_release  on public.orders(auto\_release\_at) where status \= 'DELIVERED\_PENDING\_RELEASE';  
-create index idx\_ledger\_user     on public.ledger\_entries(user\_id);  
-create index idx\_ledger\_order    on public.ledger\_entries(order\_id);  
-create index idx\_messages\_order  on public.messages(order\_id, created\_at);  
-create index idx\_webhook\_req     on public.webhook\_events(request\_id);  
-create index idx\_users\_nuban     on public.users(nomba\_virtual\_account\_number);  
-create index idx\_users\_acctref   on public.users(nomba\_account\_ref);  
+create index idx_orders_slug     on public.orders(link_slug);  
+create index idx_orders_vendor   on public.orders(vendor_id);  
+create index idx_orders_buyer    on public.orders(buyer_id);  
+create index idx_orders_status   on public.orders(status);  
+create index idx_orders_release  on public.orders(auto_release_at) where status = 'DELIVERED_PENDING_RELEASE';  
+create index idx_ledger_user     on public.ledger_entries(user_id);  
+create index idx_ledger_order    on public.ledger_entries(order_id);  
+create index idx_messages_order  on public.messages(order_id, created_at);  
+create index idx_webhook_req     on public.webhook_events(request_id);  
+create index idx_users_nuban     on public.users(nomba_virtual_account_number);  
+create index idx_users_acctref   on public.users(nomba_account_ref);  
  
 
-**5\. Order State Machine**
+-- 5. Order State Machine
 
-**
+
 
 -- ADDITIONAL RPCs AND FIXES
 
