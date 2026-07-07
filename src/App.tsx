@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import ScrollToTop from './components/ScrollToTop';
 import { Toaster } from 'react-hot-toast';
+import { supabase } from './lib/supabase';
 
 // Public Pages (Placeholders)
 import Splash from './pages/Splash';
@@ -41,10 +42,37 @@ import AdminDisputes from './pages/AdminDisputes';
 
 
 
-// Auth Guard Placeholder
+// Real Auth Guard
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
-  // const isAuthenticated = false; // TODO: Hook up to auth state
-  // TODO: Add redirect logic preserving intended route
+  const [isAuthenticated, setIsAuthenticated] = React.useState<boolean | null>(null);
+
+  React.useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setIsAuthenticated(!!session);
+    });
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setIsAuthenticated(!!session);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  if (isAuthenticated === null) {
+    return (
+      <div className="min-h-screen bg-[#101415] flex items-center justify-center">
+        <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    // Save intended route if needed, here we just redirect
+    return <Navigate to="/signin" replace />;
+  }
+
   return <>{children}</>;
 };
 

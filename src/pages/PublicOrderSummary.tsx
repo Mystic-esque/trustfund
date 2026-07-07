@@ -13,9 +13,7 @@ interface OrderDetails {
   sellerUsername: string;
   sellerName: string;
   memberSince: string;
-  trustRating: number;
   escrowDeals: number;
-  disputes: number;
   price: number;
   vendorId: string;
   status: string;
@@ -77,9 +75,7 @@ const PublicOrderSummary = () => {
           sellerUsername: vendor.username || vendor.full_name.split(' ').join('_').toLowerCase(),
           sellerName: vendor.full_name,
           memberSince: monthYear,
-          trustRating: 4.9, // mock
           escrowDeals: vendor.completed_deals_count || 0,
-          disputes: 0, // mock
           price: finalOrderData.amount,
           vendorId: vendor.id,
           status: finalOrderData.status,
@@ -208,16 +204,8 @@ const PublicOrderSummary = () => {
             </div>
             <div className="flex gap-8 w-full md:w-auto overflow-x-auto pb-2">
               <div className="text-center min-w-[100px]">
-                <p className="text-[12px] text-[#cfc2d6] opacity-60 uppercase mb-1">Trust Rating</p>
-                <p className="text-[20px] font-medium text-[#ddb7ff]">{order.trustRating.toFixed(1)} / 5.0</p>
-              </div>
-              <div className="text-center min-w-[100px]">
-                <p className="text-[12px] text-[#cfc2d6] opacity-60 uppercase mb-1">Escrow Deals</p>
+                <p className="text-[12px] text-[#cfc2d6] opacity-60 uppercase mb-1">Completed Deals</p>
                 <p className="text-[20px] font-medium text-[#e0e3e5]">{order.escrowDeals}</p>
-              </div>
-              <div className="text-center min-w-[100px]">
-                <p className="text-[12px] text-[#cfc2d6] opacity-60 uppercase mb-1">Disputes</p>
-                <p className="text-[20px] font-medium text-[#e0e3e5]">{order.disputes}</p>
               </div>
             </div>
           </div>
