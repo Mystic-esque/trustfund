@@ -140,8 +140,9 @@ const SignIn = () => {
         {/* Social Logins */}
         <div className="grid grid-cols-2 gap-4">
           <button 
+            type="button"
             className="glass-panel flex items-center justify-center gap-3 py-3 rounded-xl hover:bg-white/10 transition-colors relative"
-            onClick={() => toast.success('Connecting to Google...')}
+            onClick={(e) => { e.preventDefault(); toast.error('Coming soon'); }}
           >
             <div className="absolute inset-0 rounded-xl glass-stroke pointer-events-none"></div>
             <div className="w-5 h-5 flex items-center justify-center">
@@ -156,8 +157,9 @@ const SignIn = () => {
             <span className="font-label-sm text-white">Google</span>
           </button>
           <button 
+            type="button"
             className="glass-panel flex items-center justify-center gap-3 py-3 rounded-xl hover:bg-white/10 transition-colors relative"
-            onClick={() => toast.success('Connecting to Apple...')}
+            onClick={(e) => { e.preventDefault(); toast.error('Coming soon'); }}
           >
             <div className="absolute inset-0 rounded-xl glass-stroke pointer-events-none"></div>
             <div className="w-5 h-5 flex items-center justify-center">

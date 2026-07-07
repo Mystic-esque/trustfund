@@ -225,23 +225,39 @@ export default function DealChat() {
                       </span>
                     </>
                   ) : (
-                    <>
-                      <div className="w-6 h-6 rounded-full overflow-hidden bg-[#353534]">
-                        {otherParty?.avatar_url ? (
-                          <img src={otherParty.avatar_url} alt="avatar" className="w-full h-full object-cover" />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center bg-primary text-white text-xs font-bold">
-                            {otherParty?.full_name?.charAt(0) || '?'}
+                    (() => {
+                      const isVendorMsg = msg.sender_id === order.vendor_id;
+                      const sender = isAdmin ? (isVendorMsg ? order.vendor : order.buyer) : otherParty;
+                      const roleTag = isAdmin ? (isVendorMsg ? 'Vendor' : 'Buyer') : '';
+                      const displayAvatar = sender?.avatar_url;
+                      const displayName = sender?.full_name?.split(' ')[0] || 'User';
+                      const initial = sender?.full_name?.charAt(0) || '?';
+
+                      return (
+                        <>
+                          <div className="w-6 h-6 rounded-full overflow-hidden bg-[#353534]">
+                            {displayAvatar ? (
+                              <img src={displayAvatar} alt="avatar" className="w-full h-full object-cover" />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center bg-primary text-white text-xs font-bold">
+                                {initial}
+                              </div>
+                            )}
                           </div>
-                        )}
-                      </div>
-                      <span className="font-label-sm text-xs text-[#d2bbff] font-bold">
-                        {otherParty?.full_name?.split(' ')[0] || 'User'} 
-                        <span className="font-normal text-[#ccc3d8] ml-1 opacity-70">
-                          {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                        </span>
-                      </span>
-                    </>
+                          <span className="font-label-sm text-xs text-[#d2bbff] font-bold flex items-center">
+                            {displayName}
+                            {roleTag && (
+                              <span className="text-[9px] bg-[#4a4455] text-[#e5e2e1] px-1.5 py-0.5 rounded-sm ml-1.5 tracking-wider uppercase">
+                                {roleTag}
+                              </span>
+                            )}
+                            <span className="font-normal text-[#ccc3d8] ml-2 opacity-70">
+                              {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            </span>
+                          </span>
+                        </>
+                      );
+                    })()
                   )}
                 </div>
                 <div className="bg-[rgba(32,31,31,0.8)] backdrop-blur-md border border-[#4a4455]/30 p-4 rounded-2xl rounded-tl-sm shadow-sm ml-8">

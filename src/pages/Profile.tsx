@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import BottomNav from '../components/BottomNav';
 import { supabase } from '../lib/supabase';
 import { useNotifications } from '../hooks/useNotifications';
+import toast from 'react-hot-toast';
 import './Profile.css';
 
 const Profile = () => {
@@ -179,7 +180,7 @@ const Profile = () => {
         <section className="space-y-3">
           <h3 className="font-label-lg font-bold text-on-surface-variant/60 px-1 uppercase tracking-widest text-[11px]">Verification & Logistics</h3>
           <div className="glass-panel-profile rounded-2xl overflow-hidden divide-y divide-outline-variant/5">
-            <Link to="/profile/verification" className="flex items-center justify-between p-4 hover:bg-surface-bright/5 transition-colors cursor-pointer group block">
+            <div onClick={() => toast.error('Coming soon')} className="flex items-center justify-between p-4 hover:bg-surface-bright/5 transition-colors cursor-pointer group block">
               <div className="flex items-center gap-4">
                 <div className="w-10 h-10 rounded-xl bg-tertiary/10 flex items-center justify-center text-tertiary">
                   <span className="material-symbols-outlined">verified_user</span>
@@ -190,9 +191,9 @@ const Profile = () => {
                 </div>
               </div>
               <span className="material-symbols-outlined text-on-surface-variant/40 group-hover:translate-x-1 transition-transform">chevron_right</span>
-            </Link>
+            </div>
             
-            <div className="flex items-center justify-between p-4 hover:bg-surface-bright/5 transition-colors cursor-pointer group">
+            <div onClick={() => toast.error('Coming soon')} className="flex items-center justify-between p-4 hover:bg-surface-bright/5 transition-colors cursor-pointer group">
               <div className="flex items-center gap-4">
                 <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
                   <span className="material-symbols-outlined">local_shipping</span>
@@ -229,7 +230,7 @@ const Profile = () => {
               </div>
               <span className="material-symbols-outlined text-on-surface-variant/40 group-hover:translate-x-1 transition-transform">chevron_right</span>
             </Link>
-            <div className="flex items-center justify-between p-4 hover:bg-surface-bright/5 cursor-pointer group">
+            <div onClick={() => toast.error('Coming soon')} className="flex items-center justify-between p-4 hover:bg-surface-bright/5 cursor-pointer group">
               <div className="flex items-center gap-4">
                 <div className="w-10 h-10 rounded-xl bg-surface-container-high flex items-center justify-center text-on-surface-variant/60">
                   <span className="material-symbols-outlined">help</span>

@@ -4,9 +4,11 @@ import { useInbox } from '../hooks/useInbox';
 const BottomNav = () => {
   const location = useLocation();
   const currentPath = location.pathname;
-  const { chats } = useInbox();
+  const { chats, currentUser } = useInbox();
 
   const hasUnread = chats.some(chat => chat.has_unread);
+  const adminEmails = ['mysticx404@gmail.com', 'admin@trustfund.com'];
+  const isAdmin = adminEmails.includes(currentUser?.email || currentUser?.user_metadata?.email || '');
 
   return (
     <div className="fixed bottom-6 left-1/2 -translate-x-1/2 w-[90%] max-w-[400px] z-50">
@@ -24,10 +26,16 @@ const BottomNav = () => {
           <span className="font-label-sm text-[10px] mt-0.5">Deals</span>
         </Link>
 
-        {/* Vibrant Add Button */}
-        <Link to="/orders/new" className="tour-new-deal w-14 h-14 -mt-8 rounded-full bg-gradient-to-br from-primary-container to-secondary-container shadow-lg shadow-primary/30 flex items-center justify-center text-white ring-4 ring-[#101415]/50 transition-all hover:scale-110 active:scale-90">
-          <span className="material-symbols-outlined text-[32px]">add</span>
-        </Link>
+        {/* Vibrant Add / Hammer Button */}
+        {isAdmin ? (
+          <Link to="/admin/disputes" className="tour-new-deal w-14 h-14 -mt-8 rounded-full bg-gradient-to-br from-[#93000a] to-[#ffb4ab] shadow-lg shadow-error/30 flex items-center justify-center text-white ring-4 ring-[#101415]/50 transition-all hover:scale-110 active:scale-90">
+            <span className="material-symbols-outlined text-[32px]">gavel</span>
+          </Link>
+        ) : (
+          <Link to="/orders/new" className="tour-new-deal w-14 h-14 -mt-8 rounded-full bg-gradient-to-br from-primary-container to-secondary-container shadow-lg shadow-primary/30 flex items-center justify-center text-white ring-4 ring-[#101415]/50 transition-all hover:scale-110 active:scale-90">
+            <span className="material-symbols-outlined text-[32px]">add</span>
+          </Link>
+        )}
 
         {/* Chat */}
         <Link to="/messages" className={`relative flex flex-col items-center justify-center px-3 transition-transform active:scale-90 ${currentPath === '/messages' ? 'text-primary' : 'text-white/60 hover:text-white'}`}>
