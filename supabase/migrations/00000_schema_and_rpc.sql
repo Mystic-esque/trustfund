@@ -40,15 +40,15 @@ create policy "Users can update own profile" on public.users
 -- 4.2 Orders Table
 
    
-DO $ BEGIN
+DO $$ BEGIN
     CREATE TYPE order_status AS ENUM (  
 'PENDING_PAYMENT', 'ESCROW_LOCKED', 'IN_TRANSIT',  
 'DELIVERED_PENDING_RELEASE', 'SETTLING', 'SETTLED',  
 'DISPUTED', 'REFUNDED', 'EXPIRED'  
-);;
+);
 EXCEPTION
     WHEN duplicate_object THEN null;
-END $;  
+END $$;  
 create table if not exists public.orders (  
   id uuid primary key default gen_random_uuid(),  
   link_slug text unique not null,    	-- 6-char random slug for deal URL  
@@ -98,20 +98,20 @@ create policy "Authenticated users can create orders" on public.orders
 -- 4.3 Ledger Entries Table (Immutable Audit Log)
 
    
-DO $ BEGIN
+DO $$ BEGIN
     CREATE TYPE ledger_entry_type AS ENUM (  
 'TOP_UP', 'ESCROW_LOCK', 'ESCROW_UNLOCK',  
 'SETTLEMENT_IN', 'SETTLEMENT_OUT',  
 'WITHDRAWAL', 'REFUND', 'PLATFORM_FEE'  
-);;
+);
 EXCEPTION
     WHEN duplicate_object THEN null;
-END $;  
-DO $ BEGIN
-    CREATE TYPE ledger_entry_status AS ENUM ('SUCCESS', 'PENDING', 'FAILED');;
+END $$;  
+DO $$ BEGIN
+    CREATE TYPE ledger_entry_status AS ENUM ('SUCCESS', 'PENDING', 'FAILED');
 EXCEPTION
     WHEN duplicate_object THEN null;
-END $;  
+END $$;  
 create table if not exists public.ledger_entries (  
   id uuid primary key default gen_random_uuid(),  
   user_id  uuid references public.users(id) not null,  
@@ -154,11 +154,11 @@ alter table public.webhook_events enable row level security;
 -- 4.5 Messages Table (Deal Chat)
 
    
-DO $ BEGIN
-    CREATE TYPE message_sender_type AS ENUM ('user', 'system');;
+DO $$ BEGIN
+    CREATE TYPE message_sender_type AS ENUM ('user', 'system');
 EXCEPTION
     WHEN duplicate_object THEN null;
-END $;  
+END $$;  
 create table if not exists public.messages (  
   id uuid primary key default gen_random_uuid(),  
   order_id uuid references public.orders(id) not null,  
@@ -799,3 +799,33 @@ BEGIN
   );
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
+-- =========================================================================
+-- TRUSTFUND HACKATHON: SECURE VIEWS TO RESTORE FRONTEND FLOWS
+-- =========================================================================
+
+-- 1. Policy to allow anyone to view orders that are still pending
+-- This fixes the "Order not found" when clicking Secure Deal
+DROP POLICY IF EXISTS "Anyone can view pending orders" ON public.orders;
+CREATE POLICY "Anyone can view pending orders" ON public.orders
+FOR SELECT USING (status = 'PENDING_PAYMENT'::order_status);
+
+-- 2. Create Public Profiles View
+-- Safely exposes only non-sensitive columns
+CREATE OR REPLACE VIEW public.public_profiles AS
+SELECT id, full_name, username, avatar_url, created_at, completed_deals_count
+FROM public.users;
+
+-- 3. Create Order Details View
+-- Automatically joins the safe public profiles so the frontend doesn't have to
+CREATE OR REPLACE VIEW public.order_details_view AS
+SELECT 
+  o.*,
+  row_to_json(v.*) as vendor,
+  row_to_json(b.*) as buyer
+FROM public.orders o
+JOIN public.public_profiles v ON o.vendor_id = v.id
+LEFT JOIN public.public_profiles b ON o.buyer_id = b.id;
+
+-- 4. Grant Select access to the views
+GRANT SELECT ON public.public_profiles TO anon, authenticated;
+GRANT SELECT ON public.order_details_view TO anon, authenticated;

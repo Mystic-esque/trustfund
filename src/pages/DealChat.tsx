@@ -31,12 +31,8 @@ export default function DealChat() {
 
       // Fetch order details
       const { data: orderData, error: orderError } = await supabase
-        .from('orders')
-        .select(`
-          *,
-          vendor:users!orders_vendor_id_fkey(id, full_name, avatar_url),
-          buyer:users!orders_buyer_id_fkey(id, full_name, avatar_url)
-        `)
+        .from('order_details_view')
+        .select('*')
         .eq('id', id)
         .single();
 

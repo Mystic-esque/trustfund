@@ -37,13 +37,8 @@ export function useInbox() {
 
       // Fetch all orders for this user
       const { data: orders, error: ordersError } = await supabase
-        .from('orders')
-        .select(`
-          id, item_name, status, amount, vendor_id, buyer_id,
-          vendor_last_read_at, buyer_last_read_at,
-          vendor:users!orders_vendor_id_fkey(id, full_name, avatar_url),
-          buyer:users!orders_buyer_id_fkey(id, full_name, avatar_url)
-        `)
+        .from('order_details_view')
+        .select('*')
         .or(`vendor_id.eq.${user.id},buyer_id.eq.${user.id}`)
         .order('created_at', { ascending: false });
 

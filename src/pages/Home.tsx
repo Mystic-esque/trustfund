@@ -71,12 +71,8 @@ const Home = () => {
       }
 
       const { data: userOrders } = await supabase
-        .from('orders')
-        .select(`
-          *,
-          vendor:users!orders_vendor_id_fkey(full_name),
-          buyer:users!orders_buyer_id_fkey(full_name)
-        `)
+        .from('order_details_view')
+        .select('*')
         .or(orString)
         .order('created_at', { ascending: false });
       

@@ -30,7 +30,7 @@ const Profile = () => {
 
       // Fetch active escrows count
       const { count } = await supabase
-        .from('orders')
+        .from('order_details_view')
         .select('*', { count: 'exact', head: true })
         .eq('buyer_id', user.id)
         .in('status', ['ESCROW_LOCKED', 'IN_TRANSIT', 'DELIVERED_PENDING_RELEASE', 'SETTLING', 'DISPUTED']);

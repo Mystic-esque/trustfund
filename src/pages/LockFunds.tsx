@@ -29,8 +29,8 @@ const LockFunds = () => {
 
       if (id) {
         const { data: orderData } = await supabase
-          .from('orders')
-          .select('*, vendor:users!orders_vendor_id_fkey(full_name, completed_deals_count)')
+          .from('order_details_view')
+          .select('*')
           .eq('id', id)
           .single();
         if (orderData) {

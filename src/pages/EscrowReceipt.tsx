@@ -16,12 +16,8 @@ const EscrowReceipt = () => {
       try {
         if (!id) return;
         const { data, error } = await supabase
-          .from('orders')
-          .select(`
-            *,
-            vendor:users!orders_vendor_id_fkey(*),
-            buyer:users!orders_buyer_id_fkey(*)
-          `)
+          .from('order_details_view')
+          .select('*')
           .eq('id', id)
           .single();
 

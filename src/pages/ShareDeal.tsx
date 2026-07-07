@@ -16,7 +16,7 @@ const ShareDeal = () => {
       if (!id) return;
       try {
         const { data, error } = await supabase
-          .from('orders')
+          .from('order_details_view')
           .select('*')
           .eq('id', id)
           .single();

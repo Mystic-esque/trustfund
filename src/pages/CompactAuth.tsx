@@ -25,8 +25,8 @@ export default function CompactAuth() {
         
         // Try fetching by link_slug
         const { data: orderData, error: orderError } = await supabase
-          .from('orders')
-          .select('*, vendor:users!vendor_id(full_name)')
+          .from('order_details_view')
+          .select('*')
           .eq('link_slug', slug)
           .single();
 
@@ -35,8 +35,8 @@ export default function CompactAuth() {
         if (orderError) {
           // Fallback to id
           const { data: orderById, error: idError } = await supabase
-            .from('orders')
-            .select('*, vendor:users!vendor_id(full_name)')
+            .from('order_details_view')
+            .select('*')
             .eq('id', slug)
             .single();
           
