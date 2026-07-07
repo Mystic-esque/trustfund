@@ -134,10 +134,16 @@ serve(async (req) => {
     const sessionId = transferData?.data?.sessionId || transferData?.data?.session_id || transferData?.data?.id;
 
     if (txStatus === "SUCCESS" || txStatus === "PENDING_BILLING") {
-      // Deduct available_balance
-      await adminClient.from("users").update({
-        available_balance: Number(vendor.available_balance) - Number(amount)
-      }).eq("id", user.id);
+      // Deduct available_balance securely using the new atomic RPC
+      const { error: deductErr } = await adminClient.rpc('decrement_available_balance', {
+        p_user_id: user.id,
+        p_amount: Number(amount)
+      });
+      
+      if (deductErr) {
+        console.error("Atomic deduct failed, likely double-spend:", deductErr);
+        return new Response(JSON.stringify({ error: "Insufficient balance or concurrent transaction" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
 
       // Insert ledger entry for withdrawal
       await adminClient.from("ledger_entries").insert([

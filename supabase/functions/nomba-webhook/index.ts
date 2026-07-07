@@ -10,13 +10,13 @@ async function verifySignature(
   secret: string
 ): Promise<boolean> {
   const data = payload.data as Record<string, unknown>;
-  const merchant = data.merchant as Record<string, unknown>;
-  const transaction = data.transaction as Record<string, unknown>;
+  const merchant = (data?.merchant || {}) as Record<string, unknown>;
+  const transaction = (data?.transaction || {}) as Record<string, unknown>;
 
   const eventType = payload.event_type as string;
   const requestId = payload.requestId as string;
-  const userId = merchant.userId as string;
-  const walletId = merchant.walletId as string;
+  const userId = merchant?.userId as string || "";
+  const walletId = merchant?.walletId as string || "";
   const transactionId = transaction.transactionId as string;
   const type = transaction.type as string;
   const time = transaction.time as string;

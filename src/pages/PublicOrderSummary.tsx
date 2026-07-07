@@ -42,28 +42,14 @@ const PublicOrderSummary = () => {
       try {
         if (!slug) throw new Error("Invalid deal link.");
 
-        // We can fetch by link_slug or id depending on how the URL is structured.
-        // Assuming slug is the link_slug:
-        const { data: orderData, error: orderError } = await supabase
-          .from('orders')
-          .select('*, vendor:users!vendor_id(*)')
-          .eq('link_slug', slug)
-          .single();
-
-        // If it fails by link_slug, let's try by id in case the URL uses ID:
-        let finalOrderData = orderData;
-        if (orderError) {
-          const { data: orderById, error: idError } = await supabase
-            .from('orders')
-            .select('*, vendor:users!vendor_id(*)')
-            .eq('id', slug)
-            .single();
-          
-          if (idError) throw new Error("Deal not found.");
-          finalOrderData = orderById;
+        const { data: rpcData, error: rpcError } = await supabase.rpc('get_public_order_by_slug', { p_slug: slug });
+        
+        if (rpcError || !rpcData || !rpcData.order) {
+          throw new Error("Deal not found or you don't have access.");
         }
 
-        const vendor = finalOrderData.vendor;
+        const finalOrderData = rpcData.order;
+        const vendor = rpcData.vendor;
         const joinedDate = new Date(vendor.created_at);
         const monthYear = joinedDate.toLocaleString('default', { month: 'short' }) + ' ' + joinedDate.getFullYear();
 
