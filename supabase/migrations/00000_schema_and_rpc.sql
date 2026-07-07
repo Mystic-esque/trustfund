@@ -3,7 +3,7 @@
 -- 4.1 Users Table
 
    
-create table public.users (  
+create table if not exists public.users (  
   id uuid primary key references auth.users(id) on delete cascade,  
   full_name text not null,  
   phone text unique not null,  
@@ -29,8 +29,10 @@ create table public.users (
   updated_at timestamptz default now()  
 );  
 alter table public.users enable row level security;  
+DROP POLICY IF EXISTS "Users can view own profile" ON public.users;
 create policy "Users can view own profile" on public.users  
   for select using (auth.uid() = id);  
+DROP POLICY IF EXISTS "Users can update own profile" ON public.users;
 create policy "Users can update own profile" on public.users  
   for update using (auth.uid() = id);  
  
@@ -38,12 +40,16 @@ create policy "Users can update own profile" on public.users
 -- 4.2 Orders Table
 
    
-create type order_status as enum (  
+DO $ BEGIN
+    CREATE TYPE order_status AS ENUM (  
 'PENDING_PAYMENT', 'ESCROW_LOCKED', 'IN_TRANSIT',  
 'DELIVERED_PENDING_RELEASE', 'SETTLING', 'SETTLED',  
 'DISPUTED', 'REFUNDED', 'EXPIRED'  
-);  
-create table public.orders (  
+);;
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $;  
+create table if not exists public.orders (  
   id uuid primary key default gen_random_uuid(),  
   link_slug text unique not null,    	-- 6-char random slug for deal URL  
   reference_id text unique not null, 	-- TF-{year}-{slug} for receipts  
@@ -78,10 +84,13 @@ create table public.orders (
   updated_at timestamptz default now()  
 );  
 alter table public.orders enable row level security;  
+DROP POLICY IF EXISTS "Vendor can view own orders" ON public.orders;
 create policy "Vendor can view own orders" on public.orders  
   for select using (auth.uid() = vendor_id);  
+DROP POLICY IF EXISTS "Buyer can view own orders" ON public.orders;
 create policy "Buyer can view own orders" on public.orders  
   for select using (auth.uid() = buyer_id);  
+DROP POLICY IF EXISTS "Authenticated users can create orders" ON public.orders;
 create policy "Authenticated users can create orders" on public.orders  
   for insert with check (auth.uid() = vendor_id);  
  
@@ -89,13 +98,21 @@ create policy "Authenticated users can create orders" on public.orders
 -- 4.3 Ledger Entries Table (Immutable Audit Log)
 
    
-create type ledger_entry_type as enum (  
+DO $ BEGIN
+    CREATE TYPE ledger_entry_type AS ENUM (  
 'TOP_UP', 'ESCROW_LOCK', 'ESCROW_UNLOCK',  
 'SETTLEMENT_IN', 'SETTLEMENT_OUT',  
 'WITHDRAWAL', 'REFUND', 'PLATFORM_FEE'  
-);  
-create type ledger_entry_status as enum ('SUCCESS', 'PENDING', 'FAILED');  
-create table public.ledger_entries (  
+);;
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $;  
+DO $ BEGIN
+    CREATE TYPE ledger_entry_status AS ENUM ('SUCCESS', 'PENDING', 'FAILED');;
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $;  
+create table if not exists public.ledger_entries (  
   id uuid primary key default gen_random_uuid(),  
   user_id  uuid references public.users(id) not null,  
   order_id uuid references public.orders(id),  -- null for top-ups/withdrawals  
@@ -113,6 +130,7 @@ create table public.ledger_entries (
   created_at timestamptz default now()  
 );  
 alter table public.ledger_entries enable row level security;  
+DROP POLICY IF EXISTS "Users can view own ledger" ON public.ledger_entries;
 create policy "Users can view own ledger" on public.ledger_entries  
   for select using (auth.uid() = user_id);  
  
@@ -120,7 +138,7 @@ create policy "Users can view own ledger" on public.ledger_entries
 -- 4.4 Webhook Events Table (Idempotency Store)
 
    
-create table public.webhook_events (  
+create table if not exists public.webhook_events (  
   id uuid primary key default gen_random_uuid(),  
   request_id text unique not null,	-- Nomba requestId — idempotency key  
   event_type text not null,  
@@ -136,8 +154,12 @@ alter table public.webhook_events enable row level security;
 -- 4.5 Messages Table (Deal Chat)
 
    
-create type message_sender_type as enum ('user', 'system');  
-create table public.messages (  
+DO $ BEGIN
+    CREATE TYPE message_sender_type AS ENUM ('user', 'system');;
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $;  
+create table if not exists public.messages (  
   id uuid primary key default gen_random_uuid(),  
   order_id uuid references public.orders(id) not null,  
   sender_id uuid references public.users(id),  -- null for system messages  
@@ -148,6 +170,7 @@ create table public.messages (
   created_at timestamptz default now()  
 );  
 alter table public.messages enable row level security;  
+DROP POLICY IF EXISTS "Order parties can view messages" ON public.messages;
 create policy "Order parties can view messages" on public.messages  
   for select using (  
 	auth.uid() in (  
@@ -156,6 +179,7 @@ create policy "Order parties can view messages" on public.messages
   	select buyer_id from public.orders where id = order_id  
 	)  
   );  
+DROP POLICY IF EXISTS "Order parties can send messages" ON public.messages;
 create policy "Order parties can send messages" on public.messages  
   for insert with check (  
 	auth.uid() in (  
@@ -170,17 +194,17 @@ alter publication supabase_realtime add table public.messages;
 -- 4.6 Indexes
 
    
-create index idx_orders_slug     on public.orders(link_slug);  
-create index idx_orders_vendor   on public.orders(vendor_id);  
-create index idx_orders_buyer    on public.orders(buyer_id);  
-create index idx_orders_status   on public.orders(status);  
-create index idx_orders_release  on public.orders(auto_release_at) where status = 'DELIVERED_PENDING_RELEASE';  
-create index idx_ledger_user     on public.ledger_entries(user_id);  
-create index idx_ledger_order    on public.ledger_entries(order_id);  
-create index idx_messages_order  on public.messages(order_id, created_at);  
-create index idx_webhook_req     on public.webhook_events(request_id);  
-create index idx_users_nuban     on public.users(nomba_virtual_account_number);  
-create index idx_users_acctref   on public.users(nomba_account_ref);  
+create index if not exists idx_orders_slug     on public.orders(link_slug);  
+create index if not exists idx_orders_vendor   on public.orders(vendor_id);  
+create index if not exists idx_orders_buyer    on public.orders(buyer_id);  
+create index if not exists idx_orders_status   on public.orders(status);  
+create index if not exists idx_orders_release  on public.orders(auto_release_at) where status = 'DELIVERED_PENDING_RELEASE';  
+create index if not exists idx_ledger_user     on public.ledger_entries(user_id);  
+create index if not exists idx_ledger_order    on public.ledger_entries(order_id);  
+create index if not exists idx_messages_order  on public.messages(order_id, created_at);  
+create index if not exists idx_webhook_req     on public.webhook_events(request_id);  
+create index if not exists idx_users_nuban     on public.users(nomba_virtual_account_number);  
+create index if not exists idx_users_acctref   on public.users(nomba_account_ref);  
  
 
 -- 5. Order State Machine
@@ -193,8 +217,8 @@ create index idx_users_acctref   on public.users(nomba_account_ref);
 -- 1. Create RLS Policy for Admins to Read Messages
 DROP POLICY IF EXISTS "Admins can view all messages" ON public.messages;
 
-CREATE POLICY "Admins can view all messages"
-  ON public.messages FOR SELECT
+DROP POLICY IF EXISTS "Admins can view all messages" ON public.messages;
+CREATE POLICY "Admins can view all messages" ON public.messages FOR SELECT
   USING (
     (auth.jwt() ->> 'email') IN ('mysticx404@gmail.com', 'admin@trustfund.com')
   );
@@ -279,8 +303,8 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- FROM admin_insert_message.sql
 -- Allow admins to insert into messages table (system status updates during dispute resolution)
-CREATE POLICY "Admins can insert messages" 
-ON public.messages 
+DROP POLICY IF EXISTS "Admins can insert messages" ON public.messages;
+CREATE POLICY "Admins can insert messages" ON public.messages 
 FOR INSERT 
 WITH CHECK ( auth.jwt() ->> 'email' IN ('mysticx404@gmail.com', 'admin@trustfund.com') );
 
@@ -687,6 +711,7 @@ CREATE TABLE IF NOT EXISTS public.notifications (
   created_at timestamptz default now()
 );
 ALTER TABLE public.notifications ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Users can view own notifications" ON public.notifications;
 CREATE POLICY "Users can view own notifications" ON public.notifications
   FOR SELECT USING (auth.uid() = user_id);
 
