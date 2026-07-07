@@ -54,8 +54,8 @@ create table public.orders (
   item_name text not null,  
   item_description text,  
   amount numeric(12,2) not null,      	-- naira decimal  
-  platform_fee numeric(12,2),         	-- amount \* 0.015  
-  net_payout   numeric(12,2),	         -- amount \- platform_fee  
+  platform_fee numeric(12,2),         	-- amount * 0.015  
+  net_payout   numeric(12,2),	         -- amount - platform_fee  
   delivery_window text,               	-- "24hrs" | "48hrs" | "3-5 days" | custom  
   -- Status  
   status order_status default 'PENDING_PAYMENT' not null,  
@@ -63,7 +63,7 @@ create table public.orders (
   escrow_locked_at timestamptz,  
   shipped_at timestamptz,  
   delivered_at timestamptz,  
-  auto_release_at timestamptz,        	-- delivered_at \+ 48 hours  
+  auto_release_at timestamptz,        	-- delivered_at + 48 hours  
   settled_at timestamptz,  
   disputed_at timestamptz,  
   -- Shipping  
@@ -73,7 +73,7 @@ create table public.orders (
   settlement_nomba_id text,  
   settlement_attempts integer default 0,  
   -- Link expiry  
-  expires_at timestamptz default now() \+ interval '72 hours',  
+  expires_at timestamptz default now() + interval '72 hours',  
   created_at timestamptz default now(),  
   updated_at timestamptz default now()  
 );  

@@ -4,6 +4,9 @@ let content = fs.readFileSync(file, 'utf8');
 
 content = content.replace(/\\_/g, '_');
 content = content.replace(/\\=/g, '=');
+content = content.replace(/\\\+/g, '+');
+content = content.replace(/\\-/g, '-');
+content = content.replace(/\\\*/g, '*');
 content = content.replace(/4\.1 Users Table\*\*/g, '-- 4.1 Users Table');
 content = content.replace(/\*\*4\.2 Orders Table\*\*/g, '-- 4.2 Orders Table');
 content = content.replace(/\*\*4\.3 Ledger Entries Table \(Immutable Audit Log\)\*\*/g, '-- 4.3 Ledger Entries Table');
