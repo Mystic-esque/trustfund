@@ -150,7 +150,7 @@ serve(async (req) => {
 
     const idempotencyKey = crypto.randomUUID();
 
-    const transferRes = await fetch(`${baseUrl.replace('/v1', '/v2')}/transfers/bank/${parentAccountId}`, {
+    const transferRes = await fetch(`${baseUrl.replace('/v1', '/v2')}/transfers/bank/${subAccountId}`, {
       method: "POST",
       headers: {
         "Authorization": `Bearer ${token}`,

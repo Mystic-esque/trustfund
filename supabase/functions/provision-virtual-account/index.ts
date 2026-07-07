@@ -72,7 +72,8 @@ serve(async (req) => {
       body: JSON.stringify({
         accountRef: userId,
         accountName: userFullName,
-        currency: "NGN"
+        currency: "NGN",
+        accountId: subAccountId
       })
     });
 
