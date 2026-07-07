@@ -42,13 +42,13 @@ serve(async (req) => {
   try {
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
-      return new Response(JSON.stringify({ error: "Missing Auth Header" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      return new Response(JSON.stringify({ error: "Missing Auth Header" }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     const { amount, pin } = await req.json();
 
     if (!amount || amount <= 0 || !pin) {
-      return new Response(JSON.stringify({ error: "Invalid amount or PIN" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      return new Response(JSON.stringify({ error: "Invalid amount or PIN" }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     const supabase = createClient(
@@ -60,7 +60,7 @@ serve(async (req) => {
     const { data: { user }, error: authErr } = await supabase.auth.getUser();
 
     if (authErr || !user) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     const adminClient = createClient(
@@ -75,25 +75,25 @@ serve(async (req) => {
       .single();
 
     if (vendorErr || !vendor) {
-      return new Response(JSON.stringify({ error: "User not found" }), { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      return new Response(JSON.stringify({ error: "User not found" }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     // Verify PIN securely server-side
     if (!vendor.payment_pin) {
-      return new Response(JSON.stringify({ error: "PIN not set up" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      return new Response(JSON.stringify({ error: "PIN not set up" }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     const isValid = await bcrypt.compare(pin, vendor.payment_pin);
     if (!isValid) {
-      return new Response(JSON.stringify({ error: "Incorrect PIN" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      return new Response(JSON.stringify({ error: "Incorrect PIN" }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     if (!vendor.bank_account_number || !vendor.bank_code) {
-      return new Response(JSON.stringify({ error: "No bank account linked" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      return new Response(JSON.stringify({ error: "No bank account linked" }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     if (Number(vendor.available_balance) < Number(amount)) {
-      return new Response(JSON.stringify({ error: "Insufficient available balance" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      return new Response(JSON.stringify({ error: "Insufficient available balance" }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     // Execute Nomba Transfer
@@ -125,7 +125,7 @@ serve(async (req) => {
 
     if (!transferRes.ok) {
       const errorText = await transferRes.text();
-      return new Response(JSON.stringify({ error: `Nomba API Error: ${errorText}` }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      return new Response(JSON.stringify({ error: `Nomba API Error: ${errorText}` }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     const transferData = await transferRes.json();
@@ -142,7 +142,7 @@ serve(async (req) => {
       
       if (deductErr) {
         console.error("Atomic deduct failed, likely double-spend:", deductErr);
-        return new Response(JSON.stringify({ error: "Insufficient balance or concurrent transaction" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+        return new Response(JSON.stringify({ error: "Insufficient balance or concurrent transaction" }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
 
       // Insert ledger entry for withdrawal
@@ -161,10 +161,10 @@ serve(async (req) => {
 
       return new Response(JSON.stringify({ success: true, reference: merchantTxRef }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     } else {
-      return new Response(JSON.stringify({ error: "Transfer failed at Nomba" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      return new Response(JSON.stringify({ error: "Transfer failed at Nomba" }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
   } catch (err: any) {
-    return new Response(JSON.stringify({ error: err.message }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    return new Response(JSON.stringify({ error: err.message }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   }
 });
