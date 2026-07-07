@@ -124,8 +124,21 @@ serve(async (req) => {
     });
 
     if (!transferRes.ok) {
+      
       const errorText = await transferRes.text();
-      return new Response(JSON.stringify({ error: `Nomba API Error: ${errorText}` }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      let cleanMessage = "The payment gateway declined the transaction.";
+      try {
+        const errJson = JSON.parse(errorText);
+        if (errJson.message) {
+          cleanMessage = errJson.message;
+        } else if (errJson.description) {
+          cleanMessage = errJson.description;
+        }
+      } catch(e) {}
+      
+      console.error("Nomba API Error:", errorText);
+  
+      return new Response(JSON.stringify({ error: `Withdrawal failed: ${cleanMessage}` }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     const transferData = await transferRes.json();
@@ -165,6 +178,6 @@ serve(async (req) => {
     }
 
   } catch (err: any) {
-    return new Response(JSON.stringify({ error: err.message }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    return new Response(JSON.stringify({ error: "An unexpected error occurred. Please try again later." }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   }
 });
