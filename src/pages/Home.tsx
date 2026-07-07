@@ -220,7 +220,7 @@ const Home = () => {
         <header className="w-full top-0 sticky bg-white/5 backdrop-blur-xl transition-opacity duration-200 flex items-center justify-between px-5 h-16 z-40 border-b border-white/10 shadow-sm">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-full overflow-hidden border border-white/20 cursor-pointer hover:opacity-80 transition-opacity bg-white/10 animate-pulse">
-              <img alt="User Profile" loading="lazy" className="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC94k3VGb5Ss-S0hfQJQZMduDlYwYtUq4hc3XsEG8u3BYRn--UK6_TThC-w6Lxk5i6XsVgHBS5hZBCItX1-PkRAO3eVBCPdVf_fl3VyD1KMmiKqdWVUPDK9SMwXgODxt62vKNI_2U32jm7ZzmXRpQrH-LSGsw2oUFN5Julm6bk6b7pgfRZhwGExiI-KkZDwjl6eGyLmiH32Q2N1vQ9mqeQs2UXMpeRpOOze3ZoIM3sRVrdsr58NuAsRVEzDCf8y2Tr09O44yDtcuxVh"/>
+              <img alt="User Profile" loading="lazy" className="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCJjdDezYwaTshpyTEGshF9s2v6yfgjBdZuAgQUzrvLGSFcLCKb2PFJJ8VrKMo9Aof3eOmFhsb-xp4cB_6BayquKBLpST133QrnfYhHw6mT0JxG2WB_rxeHIAY2R87VgpbCsnZFDrEMQIi-ndATMoL3cztehYtraXlKTdOyN6yIs_O8I9sEPJziwVoI14iwQhoUmNH6dG2tRX6AZt0NWdKOInuNLqHVMnCryJvTiJKecuWlx1D1uNg7rvTBiAvnUVpiGz0D46DaOBO_"/>
             </div>
             <h1 className="font-headline-lg-mobile text-[18px] md:text-[20px] font-bold text-white hover:opacity-80 transition-opacity cursor-pointer">
               {userData ? `Hi 👋, ${userData.full_name.split(' ')[0]}` : 'TrustFund'}

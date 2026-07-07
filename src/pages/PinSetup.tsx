@@ -31,7 +31,10 @@ export default function PinSetup() {
         document.getElementById(`pin-${index + 1}`)?.focus();
       } else if (value !== '' && index === 3) {
         // Automatically go to confirm step
-        setTimeout(() => setStep('confirm'), 300);
+        setTimeout(() => {
+          setStep('confirm');
+          setTimeout(() => document.getElementById('confirm-pin-0')?.focus(), 50);
+        }, 300);
       }
     }
   };
