@@ -63,7 +63,7 @@ serve(async (req) => {
 
     
     if (action === "balance") {
-      const res = await fetch(`${baseUrl}/accounts/accounts`, {
+      const res = await fetch(`${baseUrl}/accounts/balance`, {
         method: "GET",
         headers: {
           "Authorization": `Bearer ${token}`,
