@@ -14,6 +14,7 @@ interface OrderDetails {
   sellerName: string;
   memberSince: string;
   escrowDeals: number;
+  deliveryWindow: string;
   price: number;
   vendorId: string;
   status: string;
@@ -76,6 +77,7 @@ const PublicOrderSummary = () => {
           sellerName: vendor.full_name,
           memberSince: monthYear,
           escrowDeals: vendor.completed_deals_count || 0,
+          deliveryWindow: finalOrderData.delivery_window || 'Not specified',
           price: finalOrderData.amount,
           vendorId: vendor.id,
           status: finalOrderData.status,
@@ -203,6 +205,10 @@ const PublicOrderSummary = () => {
               <p className="text-[12px] text-[#cfc2d6] opacity-50 mt-1">Member since {order.memberSince}</p>
             </div>
             <div className="flex gap-8 w-full md:w-auto overflow-x-auto pb-2">
+              <div className="text-center min-w-[100px]">
+                <p className="text-[12px] text-[#cfc2d6] opacity-60 uppercase mb-1">Delivery Window</p>
+                <p className="text-[20px] font-medium text-[#ddb7ff]">{order.deliveryWindow}</p>
+              </div>
               <div className="text-center min-w-[100px]">
                 <p className="text-[12px] text-[#cfc2d6] opacity-60 uppercase mb-1">Completed Deals</p>
                 <p className="text-[20px] font-medium text-[#e0e3e5]">{order.escrowDeals}</p>
