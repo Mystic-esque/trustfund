@@ -177,7 +177,7 @@ const PublicOrderSummary = () => {
             <div className="backdrop-blur-[40px] border border-white/10 bg-gradient-to-br from-white/10 to-white/5 p-5 rounded-2xl space-y-2 shadow-[inset_0_1px_1px_rgba(255,255,255,0.1)]">
               <div className="text-[#ddb7ff] text-xl font-bold">02</div>
               <p className="text-[16px] font-medium text-[#e0e3e5]">Inspection Period</p>
-              <p className="text-[12px] text-[#cfc2d6] opacity-60">24-hour window to verify asset quality after delivery.</p>
+              <p className="text-[12px] text-[#cfc2d6] opacity-60">48-hour window to verify asset quality after delivery.</p>
             </div>
             <div className="backdrop-blur-[40px] border border-white/10 bg-gradient-to-br from-white/10 to-white/5 p-5 rounded-2xl space-y-2 shadow-[inset_0_1px_1px_rgba(255,255,255,0.1)]">
               <div className="text-[#ddb7ff] text-xl font-bold">03</div>

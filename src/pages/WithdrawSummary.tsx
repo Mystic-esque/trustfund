@@ -58,7 +58,7 @@ export default function WithdrawSummary() {
   }
 
   const numericAmount = Number(amount);
-  const fee: number = 0; // Assuming free withdrawals for now
+  const fee: number = 20; // ₦20 withdrawal fee
 
   return (
     <div className="bg-[#101415] text-[#e0e3e5] min-h-screen font-body-md overflow-x-hidden selection:bg-[#b76dff] selection:text-white pb-10">

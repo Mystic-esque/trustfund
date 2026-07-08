@@ -46,8 +46,9 @@ export default function WithdrawAmount() {
       toast.error('Please enter a valid amount');
       return;
     }
-    if (numAmount > Number(userData?.available_balance)) {
-      toast.error('Insufficient available balance');
+    const totalRequired = numAmount + 20; // Include ₦20 withdrawal fee
+    if (totalRequired > Number(userData?.available_balance)) {
+      toast.error(`Insufficient balance (₦${totalRequired.toLocaleString()} required including ₦20 fee)`);
       return;
     }
 
@@ -111,6 +112,8 @@ export default function WithdrawAmount() {
           <span className="font-body-sm text-on-surface-variant/80">Available: </span>
           <span className="font-body-md font-bold text-white">₦{Number(userData.available_balance || 0).toLocaleString()}</span>
         </div>
+
+        <p className="text-xs text-on-surface-variant/50 mt-4">A ₦20 withdrawal fee applies.</p>
 
         <div className="w-full mt-12 p-4 rounded-2xl bg-surface-container-high/30 border border-white/5 flex items-center gap-4 text-left cursor-pointer hover:bg-surface-container-high/50 transition-colors" onClick={() => navigate('/bank-setup?redirect=withdraw')}>
           <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">

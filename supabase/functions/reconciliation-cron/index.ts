@@ -110,7 +110,7 @@ serve(async (req) => {
           await supabase.from("ledger_entries").insert([
             {
               user_id: user.id,
-              entry_type: "TOPUP",
+              entry_type: "TOP_UP",
               amount: amount,
               balance_effect: "available",
               direction: "credit",
@@ -129,6 +129,13 @@ serve(async (req) => {
               narration: "Virtual account deposit fee"
             }
           ]);
+
+          await supabase.from("notifications").insert({
+            user_id: user.id,
+            title: "Deposit Received 📥",
+            body: `Your TrustFund wallet has been credited with ₦${netAmount.toLocaleString()} (after ₦${depositFee} fee).`,
+            type: "payment"
+          });
 
           await supabase.from("webhook_events").insert({
             request_id: txId,

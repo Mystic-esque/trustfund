@@ -45,7 +45,13 @@ const SignUp = () => {
         }
       });
 
-      if (authError) throw authError;
+      if (authError) {
+        // If the Postgres trigger fails due to unique constraint on phone, Supabase returns a 500
+        if (authError.status === 500 || authError.message.includes('Database error')) {
+          throw new Error("Phone number or email is already registered.");
+        }
+        throw authError;
+      }
 
       const userId = authData.user?.id;
       if (!userId) throw new Error("No user ID returned");

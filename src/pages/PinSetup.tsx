@@ -82,6 +82,8 @@ export default function PinSetup() {
         navigate(`/orders/${orderId}/lock`);
       } else if (redirect === 'bank-setup') {
         navigate('/bank-setup');
+      } else if (redirect === 'bank-setup-withdraw') {
+        navigate('/bank-setup?redirect=withdraw');
       } else {
         navigate(-1);
       }

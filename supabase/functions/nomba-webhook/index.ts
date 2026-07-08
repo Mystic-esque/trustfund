@@ -176,7 +176,7 @@ serve(async (req) => {
         .insert([
           {
             user_id: userId,
-            entry_type: "TOPUP",
+            entry_type: "TOP_UP",
             status: "SUCCESS",
             amount: amount,
             balance_effect: "available",
@@ -210,6 +210,14 @@ serve(async (req) => {
         .from("webhook_events")
         .update({ processed: true, processed_at: new Date().toISOString() })
         .eq("request_id", requestId);
+
+      // Create notification for deposit
+      await supabase.from("notifications").insert({
+        user_id: userId,
+        title: "Deposit Received 📥",
+        body: `Your TrustFund wallet has been credited with ₦${netAmount.toLocaleString()} (after ₦${depositFee} fee).`,
+        type: "payment"
+      });
 
       console.log(`Successfully credited ₦${netAmount} to user ${userId} after ₦${depositFee} fee. New balance: ₦${newBalance}`);
       break;
@@ -271,16 +279,29 @@ serve(async (req) => {
         settled_at: new Date().toISOString(),
       }).eq("id", order.id);
 
+      const payoutFee = 20;
+      const final_payout = Number(order.net_payout) - payoutFee;
+
       await supabase.from("ledger_entries").insert([
         {
           user_id: order.vendor_id,
           order_id: order.id,
           entry_type: "SETTLEMENT_OUT",
-          amount: Number(order.net_payout),
+          amount: final_payout,
           balance_effect: "pending",
           direction: "debit",
           narration: `Payout for ${order.item_name}`
         },
+        {
+          user_id: order.vendor_id,
+          order_id: order.id,
+          entry_type: "PAYOUT_FEE",
+          amount: payoutFee,
+          balance_effect: "pending",
+          direction: "debit",
+          narration: `TrustFund / Nomba settlement fee`
+        },
+
         {
           user_id: order.buyer_id,
           order_id: order.id,

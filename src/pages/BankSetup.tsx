@@ -106,7 +106,8 @@ export default function BankSetup() {
     
     if (!data?.payment_pin) {
       toast('Please set up your payment PIN first', { icon: '🔒' });
-      navigate(`/settings/pin-setup?redirect=${redirect || 'bank-setup'}`);
+      const pinRedirect = redirect ? `bank-setup-${redirect}` : 'bank-setup';
+      navigate(`/settings/pin-setup?redirect=${pinRedirect}`);
       return;
     }
     setShowPinModal(true);
@@ -186,7 +187,7 @@ export default function BankSetup() {
           <button 
             onClick={() => {
               if (redirect === 'withdraw') {
-                navigate('/withdraw/amount');
+                navigate('/profile');
               } else {
                 navigate(-1);
               }
