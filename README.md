@@ -1,5 +1,10 @@
 # TrustFund 
 
+**Demo video:** https://www.loom.com/share/2ed2585cbd424c25abf1f5f70b4f556a
+
+**Official documentation:** https://docs.google.com/document/d/1mtM1P2JsXV8Ge1zbJITYm0_cuWlxf0Rky4PX9H0_pJc/edit?usp=sharing
+
+**Admin credentials:** `admin@trustfund.com` / `00000000`
 **DevCareer x Nomba Hackathon 2026 • Virtual Accounts as Infrastructure Track**
 
 > [!IMPORTANT]
