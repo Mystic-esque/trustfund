@@ -49,7 +49,8 @@ const NewDeal = () => {
 
   const amountVal = parseFloat(amount) || 0;
   const fee = amountVal * 0.015; // 1.5% platform fee
-  const net = amountVal - fee;
+  const payoutFee = amountVal > 0 ? 20 : 0; // 20 NGN transfer fee
+  const net = amountVal > 0 ? (amountVal - fee - payoutFee) : 0;
 
   const displayTitle = title.trim() || 'New Deal';
   
@@ -224,7 +225,11 @@ const NewDeal = () => {
           <div className="mt-2 p-4 rounded-xl bg-white/5 border border-white/5 space-y-2">
             <div className="flex justify-between items-center">
               <span className="text-on-surface-variant text-sm">Escrow Fee (1.5%)</span>
-              <span className="text-white font-medium">{formatMoney(fee)}</span>
+              <span className="text-white font-medium">-{formatMoney(fee)}</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-on-surface-variant text-sm">Transfer Fee</span>
+              <span className="text-white font-medium">-{formatMoney(payoutFee)}</span>
             </div>
             <div className="flex justify-between items-center pt-2 border-t border-white/5">
               <span className="text-primary font-semibold">You will receive</span>

@@ -109,15 +109,27 @@ serve(async (req) => {
             settled_at: new Date().toISOString(),
           }).eq("id", order.id);
 
+          const payoutFee = 20;
+          const final_payout = Number(order.net_payout) - payoutFee;
+
           await supabase.from("ledger_entries").insert([
             {
               user_id: order.vendor_id,
               order_id: order.id,
               entry_type: "SETTLEMENT_OUT",
-              amount: order.net_payout,
+              amount: final_payout,
               balance_effect: "pending",
               direction: "debit",
               narration: `Payout for ${order.item_name}`
+            },
+            {
+              user_id: order.vendor_id,
+              order_id: order.id,
+              entry_type: "PAYOUT_FEE",
+              amount: payoutFee,
+              balance_effect: "pending",
+              direction: "debit",
+              narration: `TrustFund / Nomba settlement fee`
             },
             {
               user_id: order.buyer_id,
@@ -134,7 +146,7 @@ serve(async (req) => {
             order_id: order.id,
             sender_type: "system",
             message_type: "status_update",
-            content: `✅ Deal complete. ₦${order.net_payout} has been sent to the seller's bank account. Ref: ${order.reference_id}`,
+            content: `✅ Deal complete. ₦${final_payout} has been sent to the seller's bank account (after ₦${payoutFee} fee). Ref: ${order.reference_id}`,
           });
 
           reconciledCount++;
@@ -202,26 +214,40 @@ serve(async (req) => {
           reconciledCount++;
         } else if (txStatus === "FAILED" || txStatus === "REFUND") {
           // Issue refund
+          const payoutFee = 20;
+          const totalRefund = Number(wd.amount) + payoutFee;
+          
           const { data: user } = await supabase.from("users").select("available_balance").eq("id", wd.user_id).single();
           if (user) {
             await supabase.from("users").update({
-              available_balance: Number(user.available_balance) + Number(wd.amount)
+              available_balance: Number(user.available_balance) + totalRefund
             }).eq("id", wd.user_id);
 
-            await supabase.from("ledger_entries").insert({
-              user_id: wd.user_id,
-              entry_type: "WITHDRAWAL_REFUND",
-              amount: wd.amount,
-              balance_effect: "available",
-              direction: "credit",
-              nomba_transaction_id: wd.nomba_transaction_id,
-              narration: "Refund for failed withdrawal"
-            });
+            await supabase.from("ledger_entries").insert([
+              {
+                user_id: wd.user_id,
+                entry_type: "WITHDRAWAL_REFUND",
+                amount: wd.amount,
+                balance_effect: "available",
+                direction: "credit",
+                nomba_transaction_id: wd.nomba_transaction_id,
+                narration: "Refund for failed withdrawal"
+              },
+              {
+                user_id: wd.user_id,
+                entry_type: "WITHDRAWAL_REFUND",
+                amount: payoutFee,
+                balance_effect: "available",
+                direction: "credit",
+                nomba_transaction_id: wd.nomba_transaction_id,
+                narration: "Refund for withdrawal fee"
+              }
+            ]);
 
             await supabase.from("notifications").insert({
               user_id: wd.user_id,
               title: "Withdrawal Failed ❌",
-              body: `Your withdrawal of ₦${wd.amount} failed and has been refunded.`,
+              body: `Your withdrawal of ₦${wd.amount} failed and ₦${totalRefund} (including fee) has been refunded.`,
               type: "payment"
             });
             

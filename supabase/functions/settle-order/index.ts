@@ -76,9 +76,16 @@ serve(async (req) => {
 
     const platform_fee = Number(order.amount) * 0.015;
     const net_payout = Number(order.amount) - platform_fee;
+    const payoutFee = 20;
+    const final_payout = net_payout - payoutFee;
 
     // Check if we should do auto-payout
-    const shouldAutoPayout = vendor.auto_payout_enabled !== false && vendor.bank_account_number && vendor.bank_code;
+    let shouldAutoPayout = vendor.auto_payout_enabled !== false && vendor.bank_account_number && vendor.bank_code;
+    
+    if (shouldAutoPayout && final_payout <= 0) {
+      console.warn(`Net payout ${net_payout} too small for ${payoutFee} NGN fee. Forcing internal settlement.`);
+      shouldAutoPayout = false;
+    }
 
     if (!shouldAutoPayout) {
       // INTERNAL SETTLEMENT (Credit internal available_balance)
@@ -159,7 +166,7 @@ serve(async (req) => {
         "X-Idempotent-key": idempotencyKey
       },
       body: JSON.stringify({
-        amount: net_payout,
+        amount: final_payout,
         accountNumber: vendor.bank_account_number,
         accountName: vendor.bank_account_name || "TrustFund Vendor",
         bankCode: vendor.bank_code,
@@ -216,10 +223,19 @@ serve(async (req) => {
           user_id: order.vendor_id,
           order_id: orderId,
           entry_type: "SETTLEMENT_OUT",
-          amount: net_payout,
+          amount: final_payout,
           balance_effect: "pending",
           direction: "debit",
           narration: `Payout for ${order.item_name}`
+        },
+        {
+          user_id: order.vendor_id,
+          order_id: orderId,
+          entry_type: "PAYOUT_FEE",
+          amount: payoutFee,
+          balance_effect: "pending",
+          direction: "debit",
+          narration: `TrustFund / Nomba settlement fee`
         },
         {
           user_id: order.buyer_id,
@@ -236,7 +252,7 @@ serve(async (req) => {
         order_id: orderId,
         sender_type: "system",
         message_type: "status_update",
-        content: `✅ Deal complete. ₦${net_payout} has been sent to the seller's bank account. Ref: ${order.reference_id}`,
+        content: `✅ Deal complete. ₦${final_payout} has been sent to the seller's bank account (after ₦${payoutFee} fee). Ref: ${order.reference_id}`,
       });
 
     } else if (txStatus === "REFUND") {

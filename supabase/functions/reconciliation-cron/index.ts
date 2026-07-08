@@ -94,22 +94,41 @@ serve(async (req) => {
 
         // Process reconciliation
         const amount = parseFloat(tx.amount);
+        const depositFee = 10;
+        const netAmount = amount - depositFee;
+        
+        if (netAmount <= 0) {
+          console.warn(`Reconciled deposit too small to cover fee: ${amount}`);
+          continue;
+        }
         
         const { data: u } = await supabase.from("users").select("available_balance").eq("id", user.id).single();
         if (u) {
-          const newBalance = Number(u.available_balance) + amount;
+          const newBalance = Number(u.available_balance) + netAmount;
           await supabase.from("users").update({ available_balance: newBalance }).eq("id", user.id);
           
-          await supabase.from("ledger_entries").insert({
-            user_id: user.id,
-            entry_type: "TOP_UP",
-            amount: amount,
-            balance_effect: "available",
-            direction: "credit",
-            nomba_transaction_id: txId,
-            sender_name: tx.senderName || "Unknown",
-            narration: "Reconciled Top-up"
-          });
+          await supabase.from("ledger_entries").insert([
+            {
+              user_id: user.id,
+              entry_type: "TOPUP",
+              amount: amount,
+              balance_effect: "available",
+              direction: "credit",
+              nomba_transaction_id: txId,
+              sender_name: tx.senderName || "Unknown",
+              narration: "Reconciled Top-up"
+            },
+            {
+              user_id: user.id,
+              entry_type: "TOPUP_FEE",
+              amount: depositFee,
+              balance_effect: "available",
+              direction: "debit",
+              nomba_transaction_id: txId,
+              sender_name: "TrustFund",
+              narration: "Virtual account deposit fee"
+            }
+          ]);
 
           await supabase.from("webhook_events").insert({
             request_id: txId,

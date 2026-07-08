@@ -202,16 +202,22 @@ const EscrowReceipt = () => {
                   <span className="font-label-lg text-[14px] text-[#e5e2e1] font-semibold">₦ {order.amount?.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
                 </div>
                 {!isLock && (
-                  <div className="flex justify-between items-center">
-                    <span className="font-body-md text-[#ccc3d8] flex items-center gap-2">
-                      Platform Fee <span className="text-[10px] bg-[#353534] px-1 rounded text-[#e5e2e1]">1.5%</span>
-                    </span>
-                    <span className="font-label-lg text-[14px] text-[#ccc3d8] font-semibold">₦ {order.platform_fee?.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
-                  </div>
+                  <>
+                    <div className="flex justify-between items-center">
+                      <span className="font-body-md text-[#ccc3d8] flex items-center gap-2">
+                        Platform Fee <span className="text-[10px] bg-[#353534] px-1 rounded text-[#e5e2e1]">1.5%</span>
+                      </span>
+                      <span className="font-label-lg text-[14px] text-[#ccc3d8] font-semibold">- ₦ {order.platform_fee?.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="font-body-md text-[#ccc3d8]">Transfer Fee</span>
+                      <span className="font-label-lg text-[14px] text-[#ccc3d8] font-semibold">- ₦ 20.00</span>
+                    </div>
+                  </>
                 )}
                 <div className="flex justify-between items-center pt-2 border-t border-[#4a4455]/20">
-                  <span className="font-label-lg text-[14px] text-[#e5e2e1] font-bold">{isLock ? 'Amount Locked' : 'Amount Released'}</span>
-                  <span className="font-headline-md text-[24px] text-[#d2bbff] font-bold">₦ {(isLock ? order.amount : order.net_payout)?.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                  <span className="font-label-lg text-[14px] text-[#e5e2e1] font-bold">{isLock ? 'Amount Locked' : 'Amount Transferred'}</span>
+                  <span className="font-headline-md text-[24px] text-[#d2bbff] font-bold">₦ {(isLock ? order.amount : (order.net_payout - 20))?.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
                 </div>
               </div>
             </div>

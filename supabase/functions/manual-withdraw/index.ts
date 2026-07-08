@@ -92,8 +92,11 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: "No bank account linked" }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    if (Number(vendor.available_balance) < Number(amount)) {
-      return new Response(JSON.stringify({ error: "Insufficient available balance" }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    const payoutFee = 20;
+    const totalDeduction = Number(amount) + payoutFee;
+
+    if (Number(vendor.available_balance) < totalDeduction) {
+      return new Response(JSON.stringify({ error: `Insufficient balance to cover withdrawal and ₦${payoutFee} fee` }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     // Execute Nomba Transfer
@@ -150,7 +153,7 @@ serve(async (req) => {
       // Deduct available_balance securely using the new atomic RPC
       const { error: deductErr } = await adminClient.rpc('decrement_available_balance', {
         p_user_id: user.id,
-        p_amount: Number(amount)
+        p_amount: totalDeduction
       });
       
       if (deductErr) {
@@ -169,6 +172,16 @@ serve(async (req) => {
           nomba_transaction_id: merchantTxRef,
           nomba_session_id: sessionId,
           narration: `Withdrawal to ${vendor.bank_account_number}`
+        },
+        {
+          user_id: user.id,
+          entry_type: "PAYOUT_FEE",
+          amount: payoutFee,
+          balance_effect: "available",
+          direction: "debit",
+          nomba_transaction_id: merchantTxRef,
+          nomba_session_id: sessionId,
+          narration: `TrustFund / Nomba withdrawal fee`
         }
       ]);
 

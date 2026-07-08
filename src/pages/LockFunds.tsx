@@ -242,6 +242,14 @@ const LockFunds = () => {
                 </div>
               </div>
             </div>
+            
+            <div className="mt-6 bg-error-container/10 border border-error-container/20 rounded-2xl p-4 flex items-start gap-3 relative z-10">
+              <span className="material-symbols-outlined text-error text-[20px] shrink-0 mt-0.5">info</span>
+              <div>
+                <p className="text-sm font-bold text-white/90 mb-1">Deposit Fee Applies</p>
+                <p className="text-xs text-white/70">A flat ₦10 processing fee is deducted from all virtual account deposits. Ensure you transfer enough to cover both the deal and the fee.</p>
+              </div>
+            </div>
           </section>
         </main>
       </div>

@@ -149,7 +149,15 @@ serve(async (req) => {
       }
 
       const userId = userData.id;
-      const newBalance = parseFloat(userData.available_balance) + amount;
+      const depositFee = 10;
+      const netAmount = amount - depositFee;
+      
+      if (netAmount <= 0) {
+        console.warn(`Deposit too small to cover fee: ${amount}`);
+        break;
+      }
+      
+      const newBalance = parseFloat(userData.available_balance) + netAmount;
 
       // Update available balance
       const { error: balanceError } = await supabase
@@ -165,18 +173,32 @@ serve(async (req) => {
       // Insert ledger entry
       const { error: ledgerError } = await supabase
         .from("ledger_entries")
-        .insert({
-          user_id: userId,
-          entry_type: "TOP_UP",
-          status: "SUCCESS",
-          amount: amount,
-          balance_effect: "available",
-          direction: "credit",
-          nomba_transaction_id: transactionId,
-          nomba_session_id: sessionId,
-          sender_name: senderName,
-          narration: `Top up from ${senderName || "bank transfer"}`,
-        });
+        .insert([
+          {
+            user_id: userId,
+            entry_type: "TOPUP",
+            status: "SUCCESS",
+            amount: amount,
+            balance_effect: "available",
+            direction: "credit",
+            nomba_transaction_id: transactionId,
+            nomba_session_id: sessionId,
+            sender_name: senderName,
+            narration: `Top up from ${senderName || "bank transfer"}`,
+          },
+          {
+            user_id: userId,
+            entry_type: "TOPUP_FEE",
+            status: "SUCCESS",
+            amount: depositFee,
+            balance_effect: "available",
+            direction: "debit",
+            nomba_transaction_id: transactionId,
+            nomba_session_id: sessionId,
+            sender_name: "TrustFund",
+            narration: `Virtual account deposit fee`,
+          }
+        ]);
 
       if (ledgerError) {
         console.error("Failed to insert ledger entry:", ledgerError);
@@ -189,7 +211,7 @@ serve(async (req) => {
         .update({ processed: true, processed_at: new Date().toISOString() })
         .eq("request_id", requestId);
 
-      console.log(`Successfully credited ₦${amount} to user ${userId}. New balance: ₦${newBalance}`);
+      console.log(`Successfully credited ₦${netAmount} to user ${userId} after ₦${depositFee} fee. New balance: ₦${newBalance}`);
       break;
     }
 
